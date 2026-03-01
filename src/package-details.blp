@@ -1,0 +1,189 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $PasarPackageDetails: Adw.NavigationPage {
+  title: "Package Details";
+  tag: "details";
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      show-end-title-buttons: true;
+    }
+
+    [top]
+    ProgressBar detail_progress_bar {
+      visible: false;
+      styles ["osd"]
+    }
+
+    content: Stack details_stack {
+      transition-type: crossfade;
+
+      StackPage {
+        name: "loading";
+
+        child: Box {
+          orientation: vertical;
+          valign: center;
+          halign: center;
+          spacing: 12;
+
+          Adw.Spinner {
+            width-request: 32;
+            height-request: 32;
+          }
+
+          Label {
+            label: "Loading…";
+            styles ["dim-label"]
+          }
+        };
+      }
+
+      StackPage {
+        name: "content";
+
+        child: ScrolledWindow {
+          hscrollbar-policy: never;
+
+          child: Adw.Clamp {
+            maximum-size: 720;
+            tightening-threshold: 680;
+
+            child: Box {
+              orientation: vertical;
+              spacing: 20;
+              margin-start: 24;
+              margin-end: 24;
+              margin-top: 16;
+              margin-bottom: 40;
+
+              /* Header: icon, name, description, buttons */
+              Box header_box {
+                orientation: horizontal;
+                spacing: 20;
+
+                /* App Icon */
+                Box {
+                  valign: start;
+
+                  Image detail_icon {
+                    pixel-size: 96;
+                    icon-name: "application-x-executable-symbolic";
+                    valign: start;
+                    styles ["icon-dropshadow"]
+                  }
+                }
+
+                /* Name / desc / actions */
+                Box {
+                  orientation: vertical;
+                  spacing: 8;
+                  hexpand: true;
+                  valign: start;
+
+                  Box name_type_box {
+                    orientation: horizontal;
+                    spacing: 8;
+
+                    Label detail_name {
+                      xalign: 0.0;
+                      wrap: true;
+                      hexpand: true;
+                      styles ["title-1"]
+                    }
+
+                    Label detail_type_badge {
+                      valign: center;
+                      styles ["badge", "type-badge"]
+                    }
+                  }
+
+                  Label detail_display_name {
+                    xalign: 0.0;
+                    visible: false;
+                    styles ["title-4", "dim-label"]
+                  }
+
+                  Label detail_desc {
+                    xalign: 0.0;
+                    wrap: true;
+                    styles []
+                  }
+
+                  Box action_box {
+                    orientation: horizontal;
+                    spacing: 8;
+                    margin-top: 4;
+
+                    Button install_button {
+                      label: "Install";
+                      styles ["suggested-action", "pill"]
+                    }
+
+                    Button remove_button {
+                      label: "Remove";
+                      visible: false;
+                      styles ["destructive-action", "pill"]
+                    }
+                  }
+                }
+              }
+
+              /* Error label — only shown when an operation fails */
+              Label error_label {
+                xalign: 0.0;
+                wrap: true;
+                visible: false;
+                margin-top: 4;
+                styles ["caption", "error"]
+              }
+
+              /* Screenshot (shown only when image is available) */
+              Adw.Bin screenshot_bin {
+                visible: false;
+                overflow: hidden;
+                styles ["card"]
+
+                Picture screenshot_picture {
+                  can-shrink: true;
+                  content-fit: contain;
+                  height-request: 300;
+                }
+              }
+
+              Separator {}
+
+              /* Metadata rows */
+              Adw.PreferencesGroup {
+                title: "Package Info";
+
+                Adw.ActionRow version_row {
+                  title: "Version";
+                  activatable: false;
+                }
+
+                Adw.ActionRow license_row {
+                  title: "License";
+                  activatable: false;
+                  visible: false;
+                }
+
+                Adw.ActionRow homepage_row {
+                  title: "Homepage";
+                  activatable: true;
+                }
+
+                Adw.ActionRow type_row {
+                  title: "Type";
+                  activatable: false;
+                }
+              }
+            };
+          };
+        };
+      }
+    };
+  };
+}

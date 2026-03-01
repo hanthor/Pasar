@@ -1,0 +1,275 @@
+# task_manager.py - Centralized installation/removal task manager
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+import subprocess
+import threading
+import time
+
+import gi
+gi.require_version('Gtk', '4.0')
+gi.require_version('Adw', '1')
+
+from gi.repository import GLib, GObject
+
+
+# ── Brew output → friendly phase mapping ─────────────────────────
+_PHASE_PATTERNS = [
+    # (substring in brew output, user-visible label, progress fraction hint)
+    ('Downloading',           'Downloading…',       0.10),
+    ('Already downloaded',    'Downloading…',       0.20),
+    ('Fetching',              'Fetching…',          0.15),
+    ('Installing',            'Installing…',        0.40),
+    ('Pouring',               'Installing…',        0.55),
+    ('Linking',               'Finishing up…',      0.75),
+    ('Unlinking',             'Removing links…',    0.60),
+    ('Uninstalling',          'Removing…',          0.50),
+    ('Removing',              'Removing…',          0.55),
+    ('Purging',               'Removing…',          0.65),
+    ('Moving',                'Finishing up…',      0.70),
+    ('Caveats',               'Almost done…',       0.85),
+    ('Summary',               'Finishing up…',      0.90),
+]
+
+
+def _parse_phase(line):
+    """Parse a line of brew output and return (label, fraction) or None."""
+    for pattern, label, frac in _PHASE_PATTERNS:
+        if pattern.lower() in line.lower():
+            return label, frac
+    return None
+
+
+class TaskStatus:
+    PENDING   = 'pending'
+    RUNNING   = 'running'
+    COMPLETED = 'completed'
+    FAILED    = 'failed'
+    CANCELLED = 'cancelled'
+
+
+class TaskOperation:
+    INSTALL   = 'install'
+    REMOVE    = 'uninstall'
+    UPGRADE   = 'upgrade'
+
+    @staticmethod
+    def label(op):
+        return {
+            TaskOperation.INSTALL: 'Installing',
+            TaskOperation.REMOVE: 'Removing',
+            TaskOperation.UPGRADE: 'Upgrading',
+        }.get(op, op.title())
+
+
+class Task(GObject.Object):
+    """A single package operation tracked by the TaskManager."""
+
+    __gtype_name__ = 'PasarTask'
+
+    # Properties observable from UI
+    status       = GObject.Property(type=str, default=TaskStatus.PENDING)
+    progress     = GObject.Property(type=float, default=0.0)   # 0.0 – 1.0
+    status_text  = GObject.Property(type=str, default='Waiting…')
+    error_detail = GObject.Property(type=str, default='')
+
+    __gsignals__ = {
+        'finished': (GObject.SignalFlags.RUN_LAST, None, (bool,)),  # success
+    }
+
+    def __init__(self, package, operation, **kwargs):
+        super().__init__(**kwargs)
+        self.package   = package
+        self.operation = operation          # TaskOperation.*
+        self._process  = None
+        self._output_lines = []            # kept for diagnostics, never shown raw
+
+    # ── Read-only helpers ────────────────────────────────────────
+    @property
+    def title(self):
+        return f'{TaskOperation.label(self.operation)} {self.package.display_name or self.package.name}'
+
+    @property
+    def is_active(self):
+        return self.status in (TaskStatus.PENDING, TaskStatus.RUNNING)
+
+    # ── Internal API (called from worker thread via GLib.idle_add) ──
+    def _set_running(self):
+        self.status = TaskStatus.RUNNING
+        self.status_text = 'Starting…'
+        self.progress = 0.05
+
+    def _update_phase(self, label, fraction):
+        self.status_text = label
+        # Only move forward
+        if fraction > self.progress:
+            self.progress = fraction
+
+    def _set_completed(self):
+        self.status = TaskStatus.COMPLETED
+        self.progress = 1.0
+        self.status_text = 'Done'
+        self.emit('finished', True)
+
+    def _set_failed(self, detail=''):
+        self.status = TaskStatus.FAILED
+        self.error_detail = detail
+        self.status_text = 'Failed'
+        self.emit('finished', False)
+
+
+class TaskManager(GObject.Object):
+    """Singleton-ish manager that owns all tasks and runs them sequentially."""
+
+    __gtype_name__ = 'PasarTaskManager'
+
+    active_count = GObject.Property(type=int, default=0)
+
+    __gsignals__ = {
+        'task-added':    (GObject.SignalFlags.RUN_LAST, None, (object,)),
+        'task-changed':  (GObject.SignalFlags.RUN_LAST, None, (object,)),
+        'task-finished': (GObject.SignalFlags.RUN_LAST, None, (object,)),
+    }
+
+    def __init__(self, backend, **kwargs):
+        super().__init__(**kwargs)
+        self._backend = backend
+        self._tasks = []           # all tasks (recent history + active)
+        self._queue = []           # tasks waiting to run
+        self._running = False
+        self._lock = threading.Lock()
+
+    # ── Public API ───────────────────────────────────────────────
+    @property
+    def tasks(self):
+        return list(self._tasks)
+
+    def get_task_for_package(self, package):
+        """Return the active task for *package*, or None."""
+        for t in reversed(self._tasks):
+            if t.package is package and t.is_active:
+                return t
+        return None
+
+    def submit(self, package, operation):
+        """Queue *operation* on *package*. Returns the new Task."""
+        task = Task(package, operation)
+        task.connect('notify', lambda *a: GLib.idle_add(self.emit, 'task-changed', task))
+        self._tasks.append(task)
+        with self._lock:
+            self._queue.append(task)
+        self._update_active_count()
+        self.emit('task-added', task)
+        self._maybe_start_next()
+        return task
+
+    # ── Convenience wrappers ─────────────────────────────────────
+    def install(self, package):
+        return self.submit(package, TaskOperation.INSTALL)
+
+    def remove(self, package):
+        return self.submit(package, TaskOperation.REMOVE)
+
+    def upgrade(self, package):
+        return self.submit(package, TaskOperation.UPGRADE)
+
+    # ── Internal runner ──────────────────────────────────────────
+    def _maybe_start_next(self):
+        with self._lock:
+            if self._running or not self._queue:
+                return
+            task = self._queue.pop(0)
+            self._running = True
+        thread = threading.Thread(target=self._run_task, args=(task,), daemon=True)
+        thread.start()
+
+    def _run_task(self, task):
+        from .backend import _brew_cmd
+
+        GLib.idle_add(task._set_running)
+
+        args = [task.operation]
+        if task.package.pkg_type == 'cask':
+            args.append('--cask')
+        args.append(task.package.name)
+        cmd = _brew_cmd(args)
+
+        try:
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+            )
+            task._process = process
+
+            for line in process.stdout:
+                line = line.rstrip('\n')
+                task._output_lines.append(line)
+                parsed = _parse_phase(line)
+                if parsed:
+                    label, frac = parsed
+                    GLib.idle_add(task._update_phase, label, frac)
+
+            process.wait()
+            success = process.returncode == 0
+
+            if success:
+                self._update_package_state(task)
+                GLib.idle_add(task._set_completed)
+            else:
+                detail = self._extract_error(task._output_lines)
+                GLib.idle_add(task._set_failed, detail)
+
+        except Exception as e:
+            GLib.idle_add(task._set_failed, str(e))
+
+        finally:
+            with self._lock:
+                self._running = False
+            GLib.idle_add(self._finish_task, task)
+
+    def _finish_task(self, task):
+        self._update_active_count()
+        self.emit('task-finished', task)
+        # Schedule next queued task
+        self._maybe_start_next()
+
+    def _update_package_state(self, task):
+        """Update the Package object + backend installed sets after a successful op."""
+        pkg = task.package
+        backend = self._backend
+        if task.operation == TaskOperation.INSTALL:
+            pkg.installed = True
+            if pkg.pkg_type == 'formula':
+                backend._installed_formulae.add(pkg.name)
+            else:
+                backend._installed_casks.add(pkg.name)
+        elif task.operation == TaskOperation.REMOVE:
+            pkg.installed = False
+            if pkg.pkg_type == 'formula':
+                backend._installed_formulae.discard(pkg.name)
+            else:
+                backend._installed_casks.discard(pkg.name)
+
+    def _update_active_count(self):
+        count = sum(1 for t in self._tasks if t.is_active)
+        if self.active_count != count:
+            self.active_count = count
+
+    @staticmethod
+    def _extract_error(lines):
+        """Pull a short human-readable error from brew output."""
+        error_lines = []
+        capture = False
+        for ln in lines:
+            low = ln.lower()
+            if 'error' in low or 'fatal' in low or 'failed' in low:
+                capture = True
+            if capture:
+                error_lines.append(ln)
+            if len(error_lines) >= 6:
+                break
+        if error_lines:
+            return '\n'.join(error_lines)
+        # Fallback: last few lines
+        return '\n'.join(lines[-4:]) if lines else 'Unknown error'

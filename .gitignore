@@ -1,0 +1,8 @@
+builddir/
+__pycache__/
+*.pyc
+*.pyo
+.*.swp
+hack/
+flatpak-build/
+.flatpak-builder/

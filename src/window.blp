@@ -1,0 +1,106 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $PasarWindow: Adw.ApplicationWindow {
+  title: "Pasar";
+  default-width: 1100;
+  default-height: 750;
+  width-request: 360;
+  height-request: 500;
+
+  content: Adw.ToastOverlay toast_overlay {
+    child: Adw.NavigationView navigation_view {
+      Adw.NavigationPage {
+        tag: "main";
+        title: "Pasar";
+
+        child: Adw.ToolbarView {
+          [top]
+          Adw.HeaderBar header_bar {
+            [title]
+            Adw.ViewSwitcher view_switcher {
+              stack: main_stack;
+              policy: wide;
+            }
+
+            [end]
+            Button task_button {
+              tooltip-text: "Downloads & Tasks";
+
+              styles ["global-progress-button", "flat"]
+
+              child: $PasarGlobalProgress global_progress {
+                expand-size: 100;
+
+                child: Image {
+                  icon-name: "folder-download-symbolic";
+                };
+              };
+            }
+
+            [end]
+            MenuButton {
+              primary: true;
+              icon-name: "open-menu-symbolic";
+              tooltip-text: "Main Menu";
+              menu-model: primary_menu;
+            }
+          }
+
+          content: Box {
+            orientation: vertical;
+
+            Adw.ViewStack main_stack {
+              vexpand: true;
+              
+              Adw.ViewStackPage {
+                name: "browse";
+                title: "Browse";
+                icon-name: "view-grid-symbolic";
+
+                child: $PasarBrowsePage browse_page {};
+              }
+
+              Adw.ViewStackPage {
+                name: "search";
+                title: "Search";
+                icon-name: "system-search-symbolic";
+
+                child: $PasarSearchPage search_page {};
+              }
+
+              Adw.ViewStackPage {
+                name: "installed";
+                title: "Installed";
+                icon-name: "view-list-symbolic";
+
+                child: $PasarInstalledPage installed_page {};
+              }
+            }
+          };
+        };
+      }
+    };
+  };
+}
+
+menu primary_menu {
+  section {
+    item {
+      label: "_Refresh";
+      action: "win.refresh";
+    }
+  }
+
+  section {
+    item {
+      label: "_About Pasar";
+      action: "app.about";
+    }
+
+    item {
+      label: "_Quit";
+      action: "app.quit";
+    }
+  }
+}

@@ -1,0 +1,53 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $PasarTaskPanel: Adw.Dialog {
+  title: "Downloads & Tasks";
+  content-width: 420;
+  content-height: 500;
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      show-end-title-buttons: true;
+
+      [end]
+      Button clear_button {
+        icon-name: "edit-clear-all-symbolic";
+        tooltip-text: "Clear Completed";
+        visible: false;
+      }
+    }
+
+    content: Stack panel_stack {
+      transition-type: crossfade;
+
+      StackPage {
+        name: "empty";
+
+        child: Adw.StatusPage {
+          icon-name: "folder-download-symbolic";
+          title: "No Tasks";
+          description: "Install, remove or upgrade packages and their progress will appear here.";
+        };
+      }
+
+      StackPage {
+        name: "tasks";
+
+        child: ScrolledWindow {
+          hscrollbar-policy: never;
+
+          child: Box task_list_box {
+            orientation: vertical;
+            spacing: 0;
+            margin-start: 12;
+            margin-end: 12;
+            margin-top: 8;
+            margin-bottom: 8;
+          };
+        };
+      }
+    };
+  };
+}

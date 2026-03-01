@@ -1,0 +1,32 @@
+#!/usr/bin/env python3
+# pasar - Homebrew App Store for GNOME
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+import os
+import sys
+import signal
+import locale
+import gettext
+
+VERSION = '@VERSION@'
+pkgdatadir = '@PKGDATADIR@'
+localedir = '@localedir@'
+
+sys.path.insert(1, pkgdatadir)
+signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+locale.bindtextdomain('pasar', localedir)
+locale.textdomain('pasar')
+gettext.install('pasar', localedir)
+
+if __name__ == '__main__':
+    import gi
+    gi.require_version('Gtk', '4.0')
+    gi.require_version('Adw', '1')
+
+    from gi.repository import Gio
+    resource = Gio.Resource.load(os.path.join(pkgdatadir, 'pasar.gresource'))
+    resource._register()
+
+    from pasar.main import main
+    sys.exit(main(VERSION))

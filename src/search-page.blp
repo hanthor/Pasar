@@ -1,0 +1,149 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $PasarSearchPage: Adw.Bin {
+  child: Adw.BreakpointBin {
+    width-request: 360;
+    height-request: 300;
+
+    Adw.Breakpoint {
+      condition ("max-width: 700sp")
+
+      setters {
+        results_flow.margin-start: 8;
+        results_flow.margin-end: 8;
+        search_clamp.margin-start: 8;
+        search_clamp.margin-end: 8;
+      }
+    }
+
+    child: Box {
+      orientation: vertical;
+
+      Adw.Clamp search_clamp {
+        margin-start: 12;
+        margin-end: 12;
+        maximum-size: 420;
+
+        child: Adw.Bin {
+          halign: fill;
+          margin-top: 12;
+          margin-bottom: 8;
+
+          child: Box {
+            spacing: 8;
+            height-request: 40;
+
+            Image {
+              icon-name: "system-search-symbolic";
+            }
+
+            Text search_entry {
+              hexpand: true;
+              placeholder-text: "Search formulae, casks, and more…";
+            }
+
+            Adw.Spinner search_spinner {
+              visible: false;
+              width-request: 16;
+              height-request: 16;
+            }
+
+            Button clear_button {
+              visible: false;
+              icon-name: "edit-clear-symbolic";
+
+              styles [
+                "flat",
+                "circular",
+              ]
+            }
+
+            styles [
+              "search-box",
+            ]
+          };
+        };
+      }
+
+      Box filter_box {
+        halign: center;
+        margin-top: 4;
+        margin-bottom: 8;
+        spacing: 6;
+
+        ToggleButton filter_all {
+          label: "All";
+          active: true;
+
+          styles ["pill"]
+        }
+
+        ToggleButton filter_formula {
+          label: "Formulae";
+          group: filter_all;
+
+          styles ["pill"]
+        }
+
+        ToggleButton filter_cask {
+          label: "Casks";
+          group: filter_all;
+
+          styles ["pill"]
+        }
+      }
+
+      Stack search_stack {
+        transition-type: crossfade;
+
+        StackPage {
+          name: "empty";
+
+          child: Adw.StatusPage {
+            icon-name: "system-search-symbolic";
+            title: "Search Homebrew";
+            description: "Find formulae and casks to install";
+          };
+        }
+
+        StackPage {
+          name: "no-results";
+
+          child: Adw.StatusPage {
+            icon-name: "edit-find-symbolic";
+            title: "No Results";
+            description: "Try a different search term";
+          };
+        }
+
+        StackPage {
+          name: "results";
+
+          child: ScrolledWindow {
+            hscrollbar-policy: never;
+            vexpand: true;
+
+            child: Adw.Clamp {
+              maximum-size: 1200;
+              tightening-threshold: 1100;
+
+              child: FlowBox results_flow {
+                homogeneous: true;
+                min-children-per-line: 1;
+                max-children-per-line: 2;
+                column-spacing: 8;
+                row-spacing: 8;
+                margin-start: 20;
+                margin-end: 20;
+                margin-top: 8;
+                margin-bottom: 30;
+                selection-mode: none;
+              };
+            };
+          };
+        }
+      }
+    };
+  };
+}
