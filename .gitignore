@@ -6,3 +6,4 @@ __pycache__/
 hack/
 flatpak-build/
 .flatpak-builder/
+.flatpak-repo/

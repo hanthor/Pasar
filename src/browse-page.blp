@@ -131,17 +131,25 @@ template $PasarBrowsePage: Adw.Bin {
 
               Separator {}
 
-              /* Recently Added Section */
+              /* Discover Section */
               Box {
                 orientation: vertical;
                 spacing: 8;
 
                 Label {
-                  label: "Recently Added";
+                  label: "Discover";
                   xalign: 0.0;
                   margin-start: 4;
 
                   styles ["title-1"]
+                }
+
+                Label {
+                  label: "Randomly selected packages for you to explore";
+                  xalign: 0.0;
+                  margin-start: 4;
+
+                  styles ["dim-label"]
                 }
 
                 FlowBox recent_flow {

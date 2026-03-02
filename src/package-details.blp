@@ -180,6 +180,36 @@ template $PasarPackageDetails: Adw.NavigationPage {
                   activatable: false;
                 }
               }
+
+              /* README section — hidden until content is fetched */
+              Box readme_bin {
+                orientation: vertical;
+                spacing: 8;
+                visible: false;
+
+                Separator {}
+
+                Label {
+                  label: "README";
+                  xalign: 0.0;
+                  styles ["title-2"]
+                }
+
+                TextView readme_view {
+                  editable: false;
+                  cursor-visible: false;
+                  wrap-mode: word_char;
+                  left-margin: 4;
+                  right-margin: 4;
+                  top-margin: 4;
+                  bottom-margin: 4;
+                  pixels-above-lines: 2;
+                  pixels-below-lines: 2;
+                  styles ["readme"]
+                }
+              }
+
+
             };
           };
         };

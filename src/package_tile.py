@@ -75,3 +75,15 @@ class PasarPackageTile(Gtk.Box):
         # If the user clicked the actual install button, that button's handler 
         # will run first.
         self.emit('clicked')
+
+    def set_icon_pixbuf(self, pixbuf):
+        """Update the tile icon from a GdkPixbuf (called from the main thread via GLib.idle_add)."""
+        if pixbuf is None:
+            return
+        try:
+            from gi.repository import Gdk
+            texture = Gdk.Texture.new_for_pixbuf(pixbuf)
+            self.package_icon.set_paintable(texture)
+        except Exception:
+            pass
+

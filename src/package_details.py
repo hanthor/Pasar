@@ -34,6 +34,8 @@ class PasarPackageDetails(Adw.NavigationPage):
     detail_progress_bar = Gtk.Template.Child()
     screenshot_bin = Gtk.Template.Child()
     screenshot_picture = Gtk.Template.Child()
+    readme_bin = Gtk.Template.Child()
+    readme_view = Gtk.Template.Child()
 
     def __init__(self, package=None, backend=None, task_manager=None, **kwargs):
         super().__init__(**kwargs)
@@ -87,10 +89,11 @@ class PasarPackageDetails(Adw.NavigationPage):
             if existing:
                 self._bind_task(existing)
 
-        # Fetch icon and screenshot
+        # Fetch icon, screenshot, and README
         if self._backend:
             self._backend.fetch_icon_async(package, self._on_icon_fetched)
             self._backend.fetch_screenshot_async(package, self._on_screenshot_fetched)
+            self._backend.fetch_readme_async(package, self._on_readme_fetched)
 
     def _update_buttons(self):
         pkg = self._package
@@ -122,6 +125,185 @@ class PasarPackageDetails(Adw.NavigationPage):
                 self.screenshot_bin.set_visible(True)
             except Exception:
                 pass
+
+    def _on_readme_fetched(self, package, text):
+        if not text or package != self._package:
+            return
+        try:
+            self._render_readme(text)
+            self.readme_bin.set_visible(True)
+        except Exception as e:
+            print(f'Pasar: README render error: {e}')
+
+    def _render_readme(self, text):
+        """Render Markdown text into the readme_view TextBuffer using TextTags."""
+        import re
+        buf = self.readme_view.get_buffer()
+        buf.set_text('')
+
+        # ── Text tags ─────────────────────────────────────────────────────────
+        tag_table = buf.get_tag_table()
+
+        def ensure_tag(name, **props):
+            t = tag_table.lookup(name)
+            if t is None:
+                t = buf.create_tag(name, **props)
+            return t
+
+        ensure_tag('h1', weight=700, scale=1.5, pixels_above_lines=10, pixels_below_lines=4)
+        ensure_tag('h2', weight=700, scale=1.25, pixels_above_lines=8, pixels_below_lines=3)
+        ensure_tag('h3', weight=700, scale=1.1, pixels_above_lines=6, pixels_below_lines=2)
+        ensure_tag('bold', weight=700)
+        ensure_tag('italic', style=2)   # Pango.Style.ITALIC
+        ensure_tag('code', family='Monospace', scale=0.9)
+        ensure_tag('blockquote', foreground='gray', left_margin=16)
+
+        # ── Pre-processing ────────────────────────────────────────────────────
+        # Strip HTML comments
+        text = re.sub(r'<!--.*?-->', '', text, flags=re.DOTALL)
+
+        # Strip linked images: [![alt](img)](url)  — must be done BEFORE plain images
+        text = re.sub(r'\[!\[[^\]]*\]\([^)]*\)\]\([^)]*\)', '', text)
+
+        # Strip plain images: ![alt](url) and ![alt][ref]
+        text = re.sub(r'!\[[^\]]*\]\([^)]*\)', '', text)
+        text = re.sub(r'!\[[^\]]*\]\[[^\]]*\]', '', text)
+
+        # Strip HTML img tags
+        text = re.sub(r'<img\s[^>]*/?>','', text, flags=re.IGNORECASE)
+
+        # Strip other HTML block tags we can't render (details/summary/div etc.)
+        text = re.sub(r'</?(?:details|summary|div|span|p|br|hr|table|thead|tbody|tr|td|th)[^>]*>', '', text, flags=re.IGNORECASE)
+
+        # Collapse lines that are now blank
+        text = re.sub(r'\n[ \t]*\n[ \t]*\n', '\n\n', text)
+
+        # ── Append helper ─────────────────────────────────────────────────────
+        it = buf.get_end_iter()
+
+        def append(s, tag_name=None):
+            nonlocal it
+            mark = buf.create_mark(None, it, True)
+            buf.insert(it, s)
+            if tag_name:
+                start = buf.get_iter_at_mark(mark)
+                buf.apply_tag_by_name(tag_name, start, it)
+            buf.delete_mark(mark)
+
+        def render_inline(line, default_tag=None):
+            """Render a line with inline bold/italic/code tags."""
+            segments = re.split(r'(\*\*[^*\n]+\*\*|\*[^*\n]+\*|_[^_\n]+_|`[^`\n]+`)', line)
+            for seg in segments:
+                if not seg:
+                    continue
+                if seg.startswith('**') and seg.endswith('**') and len(seg) > 4:
+                    append(seg[2:-2], 'bold')
+                elif len(seg) > 2 and ((seg.startswith('*') and seg.endswith('*')) or
+                                        (seg.startswith('_') and seg.endswith('_'))):
+                    append(seg[1:-1], 'italic')
+                elif seg.startswith('`') and seg.endswith('`') and len(seg) > 2:
+                    append(seg[1:-1], 'code')
+                else:
+                    # Strip markdown links: [text](url) → text
+                    clean = re.sub(r'\[([^\]]+)\]\([^)]*\)', r'\1', seg)
+                    # Strip reference links: [text][ref] → text
+                    clean = re.sub(r'\[([^\]]+)\]\[[^\]]*\]', r'\1', clean)
+                    append(clean, default_tag)
+
+        # ── Line-by-line rendering ─────────────────────────────────────────────
+        in_code_block = False
+        lines = text.splitlines()
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+
+            # Fenced code blocks
+            if line.startswith('```') or line.startswith('~~~'):
+                in_code_block = not in_code_block
+                if not in_code_block:
+                    append('\n')
+                i += 1
+                continue
+
+            if in_code_block:
+                append(line + '\n', 'code')
+                i += 1
+                continue
+
+            # Setext headings (underlined with === or ---)
+            if i + 1 < len(lines):
+                next_line = lines[i + 1]
+                if re.match(r'^=+\s*$', next_line) and line.strip():
+                    append(re.sub(r'[`*_]', '', line.strip()) + '\n', 'h1')
+                    i += 2
+                    continue
+                if re.match(r'^-+\s*$', next_line) and line.strip():
+                    append(re.sub(r'[`*_]', '', line.strip()) + '\n', 'h2')
+                    i += 2
+                    continue
+
+            # ATX headings: # ## ###
+            h = re.match(r'^(#{1,3})\s+(.*)', line)
+            if h:
+                level = len(h.group(1))
+                heading_text = re.sub(r'[`*_]|#+\s*$', '', h.group(2)).strip()
+                append(heading_text + '\n', f'h{level}')
+                i += 1
+                continue
+
+            # Horizontal rules → blank line
+            if re.match(r'^[-*_]{3,}\s*$', line):
+                append('\n')
+                i += 1
+                continue
+
+            # Skip remaining HTML tags on their own line
+            if re.match(r'^\s*<[^>]+>\s*$', line):
+                i += 1
+                continue
+
+            # Blockquote lines
+            bq = re.match(r'^>\s?(.*)', line)
+            if bq:
+                render_inline(bq.group(1), 'blockquote')
+                append('\n')
+                i += 1
+                continue
+
+            # Bullet list items
+            bullet = re.match(r'^(\s*)[-*+]\s+(.*)', line)
+            if bullet:
+                indent = bullet.group(1)
+                rest = bullet.group(2)
+                append(indent + '• ')
+                render_inline(rest)
+                append('\n')
+                i += 1
+                continue
+
+            # Numbered list items
+            numbered = re.match(r'^(\s*)\d+\.\s+(.*)', line)
+            if numbered:
+                indent = numbered.group(1)
+                rest = numbered.group(2)
+                append(indent)
+                render_inline(rest)
+                append('\n')
+                i += 1
+                continue
+
+            # Blank line
+            if not line.strip():
+                append('\n')
+                i += 1
+                continue
+
+            # Normal paragraph text
+            render_inline(line)
+            append('\n')
+            i += 1
+
+
 
     # ── Task binding ─────────────────────────────────────────────
     def _bind_task(self, task):
