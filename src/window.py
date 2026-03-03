@@ -75,6 +75,10 @@ class PasarWindow(Adw.ApplicationWindow):
         refresh_action.connect('activate', self._on_refresh)
         self.add_action(refresh_action)
 
+        open_brewfile_action = Gio.SimpleAction.new('open-brewfile', None)
+        open_brewfile_action.connect('activate', self._on_open_brewfile)
+        self.add_action(open_brewfile_action)
+
         # Settings for size persistence
         self._settings = Gio.Settings.new('dev.jamesq.Pasar')
         self.set_default_size(
@@ -235,6 +239,56 @@ class PasarWindow(Adw.ApplicationWindow):
         self.browse_page.set_loading()
         self.backend.load_all_async()
         self.toast_overlay.add_toast(Adw.Toast.new('Refreshing package list…'))
+
+    def _on_open_brewfile(self, action, param):
+        _log.info('Open Brewfile action triggered')
+        from gi.repository import Gtk
+        
+        # Create file filter for .Brewfile files
+        filter_brewfile = Gtk.FileFilter()
+        filter_brewfile.set_name('Brewfile')
+        filter_brewfile.add_pattern('*.Brewfile')
+        filter_brewfile.add_pattern('Brewfile')
+        
+        filter_all = Gtk.FileFilter()
+        filter_all.set_name('All files')
+        filter_all.add_pattern('*')
+        
+        filters = Gio.ListStore.new(Gtk.FileFilter)
+        filters.append(filter_brewfile)
+        filters.append(filter_all)
+        
+        # Create and configure file dialog
+        dialog = Gtk.FileDialog()
+        dialog.set_title('Open Brewfile')
+        dialog.set_filters(filters)
+        dialog.set_default_filter(filter_brewfile)
+        
+        # Suggest the ublue-os brewfile directory if it exists
+        import os
+        default_path = '/usr/share/ublue-os/homebrew'
+        if os.path.exists(default_path):
+            initial_folder = Gio.File.new_for_path(default_path)
+            dialog.set_initial_folder(initial_folder)
+        
+        # Open dialog and handle response
+        dialog.open(self, None, self._on_brewfile_selected)
+
+    def _on_brewfile_selected(self, dialog, result):
+        try:
+            file = dialog.open_finish(result)
+            if file:
+                path = file.get_path()
+                _log.info('User selected Brewfile: %s', path)
+                
+                from .brewfile_dialog import PasarBrewfileDialog
+                brewfile_dialog = PasarBrewfileDialog(window=self)
+                brewfile_dialog.load_brewfile(path)
+                brewfile_dialog.present()
+        except Exception as e:
+            if 'dismissed' not in str(e).lower():
+                _log.error('Error opening Brewfile: %s', e)
+                self.toast_overlay.add_toast(Adw.Toast.new('Failed to open Brewfile'))
 
     def _on_close(self, *args):
         w, h = self.get_default_size()
