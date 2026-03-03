@@ -332,6 +332,31 @@ template $PasarPackageDetails: Adw.NavigationPage {
                 }
               }
 
+              /* Related Packages section */
+              Box related_bin {
+                orientation: vertical;
+                spacing: 8;
+                visible: false;
+                margin-top: 16;
+
+                Separator {}
+
+                Label {
+                  label: "Related Packages";
+                  xalign: 0.0;
+                  styles ["title-2"]
+                }
+
+                FlowBox related_flow {
+                  homogeneous: true;
+                  min-children-per-line: 1;
+                  max-children-per-line: 3;
+                  column-spacing: 8;
+                  row-spacing: 8;
+                  margin-bottom: 20;
+                  selection-mode: none;
+                }
+              }
 
             };
           };

@@ -50,6 +50,8 @@ class PasarPackageDetails(Adw.NavigationPage):
     readme_view = Gtk.Template.Child()
     read_more_button = Gtk.Template.Child()
     debug_render_button = Gtk.Template.Child()
+    related_bin = Gtk.Template.Child()
+    related_flow = Gtk.Template.Child()
 
     def __init__(self, package=None, backend=None, task_manager=None, **kwargs):
         super().__init__(**kwargs)
@@ -129,6 +131,46 @@ class PasarPackageDetails(Adw.NavigationPage):
             self._backend.fetch_icon_async(package, self._on_icon_fetched)
             self._backend.fetch_screenshot_async(package, self._on_screenshot_fetched)
             self._backend.fetch_readme_async(package, self._on_readme_fetched)
+            GLib.idle_add(self._load_related_packages)
+
+    def _load_related_packages(self):
+        if not self._backend or not self._package:
+            return
+            
+        search_term = self._package.name.split('@')[0]
+        results = self._backend.search(search_term)
+        
+        # Filter out the current package itself
+        results = [p for p in results if p.name != self._package.name and p.full_name != self._package.full_name]
+        
+        if not results:
+            self.related_bin.set_visible(False)
+            return
+            
+        results = results[:6]  # limit to top 6 related packages
+        
+        from .package_tile import PasarPackageTile
+        
+        while child := self.related_flow.get_first_child():
+            self.related_flow.remove(child)
+            
+        for pkg in results:
+            tile = PasarPackageTile(package=pkg)
+            tile.connect('clicked', self._on_related_clicked)
+            tile.connect('install-requested', self._on_related_install_requested)
+            self.related_flow.append(tile)
+            
+        self.related_bin.set_visible(True)
+
+    def _on_related_clicked(self, tile):
+        pkg = tile.get_package()
+        if pkg:
+            self.emit('package-changed', pkg)
+
+    def _on_related_install_requested(self, tile):
+        pkg = tile.get_package()
+        if pkg and self._task_manager:
+            self._task_manager.install(pkg)
 
     def _update_buttons(self):
         pkg = self._package

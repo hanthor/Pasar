@@ -84,7 +84,7 @@ class UpdatesCard(Gtk.Box):
     def _on_outdated_changed(self, backend, outdated_data):
         """Handle backend's outdated-changed signal."""
         _log.debug('Outdated changed signal: %s', outdated_data)
-        self._outdated_data = outdated_data or {}
+        self._outdated_data = dict(outdated_data) if outdated_data else {}
         # Convert dict to list of tuples for display
         packages_list = [(name, info) for name, info in self._outdated_data.items()]
         self.set_outdated_packages(packages_list)
@@ -138,9 +138,9 @@ class UpdatesCard(Gtk.Box):
             box.append(version_label)
 
             row.set_child(box)
-            # Store pkg_type as data on the row for later retrieval
-            row.set_data('package-name', name)
-            row.set_data('package-type', pkg_type)
+            # Store metadata as normal Python attributes on the row for later retrieval
+            row._package_name = name
+            row._package_type = pkg_type
             self._updates_list.append(row)
 
         # Update count label
@@ -187,8 +187,8 @@ class UpdatesCard(Gtk.Box):
     def _on_row_activated(self, listbox, row):
         """Handle row activation - emit signal to show version history."""
         if row:
-            name = row.get_data('package-name')
-            pkg_type = row.get_data('package-type')
+            name = getattr(row, '_package_name', None)
+            pkg_type = getattr(row, '_package_type', None)
             if name:
                 _log.info('Activated package: %s (%s)', name, pkg_type)
                 package = self._find_package(name, pkg_type)
