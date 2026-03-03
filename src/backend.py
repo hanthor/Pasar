@@ -245,6 +245,7 @@ class BrewBackend(GObject.Object):
         'formulae-loaded': (GObject.SignalFlags.RUN_LAST, None, (object,)),
         'casks-loaded': (GObject.SignalFlags.RUN_LAST, None, (object,)),
         'installed-loaded': (GObject.SignalFlags.RUN_LAST, None, (object,)),
+        'outdated-changed': (GObject.SignalFlags.RUN_LAST, None, (object,)),
         'operation-complete': (GObject.SignalFlags.RUN_LAST, None, (bool, str)),
         'operation-output': (GObject.SignalFlags.RUN_LAST, None, (str,)),
     }
@@ -255,6 +256,9 @@ class BrewBackend(GObject.Object):
         self._casks = []
         self._installed_formulae = set()
         self._installed_casks = set()
+        self._outdated_formulae = {}  # {name: {installed, latest}}
+        self._outdated_casks = {}  # {name: {installed, latest}}
+        self._outdated_lock = threading.Lock()
         self._cache_dir = os.path.join(GLib.get_user_cache_dir(), 'pasar')
         os.makedirs(self._cache_dir, exist_ok=True)
         _log.debug('BrewBackend init  cache_dir=%s', self._cache_dir)
@@ -296,6 +300,58 @@ class BrewBackend(GObject.Object):
         from .logging_util import log_timing
         with log_timing(f'fetch flatpak appstream {app_id}', 'brewfile'):
             return self._fetch_json(FLATHUB_APPSTREAM_API.format(app_id))
+
+    def get_version_history(self, package_name, pkg_type='formula'):
+        """Fetch version history and changelogs from the package's git repository.
+        
+        Supports multiple git forges: GitHub, GitLab, Codeberg, etc.
+        
+        Args:
+            package_name: Name of the package (formula or cask)
+            pkg_type: Type of package ('formula' or 'cask')
+        
+        Returns:
+            List of dicts: [{version, date, changelog}, ...]
+        """
+        from .git_forge import get_forge_for_url
+        
+        _log.debug('Getting version history for %s (%s)', package_name, pkg_type)
+        
+        # Find the package to get its source URL
+        package = None
+        if pkg_type == 'formula':
+            package = next((p for p in self._formulae if p.name == package_name), None)
+        elif pkg_type == 'cask':
+            package = next((p for p in self._casks if p.name == package_name), None)
+        
+        if not package or not package.source_url:
+            _log.warning('Could not find package or source URL: %s (%s)', package_name, pkg_type)
+            return []
+        
+        # Get the appropriate forge handler
+        forge, owner, repo = get_forge_for_url(package.source_url)
+        if not forge or not owner or not repo:
+            _log.warning('Could not detect git forge for URL: %s', package.source_url)
+            return []
+        
+        _log.info('Detected forge for %s: %s/%s', package_name, owner, repo)
+        
+        # Check cache first (24h TTL)
+        cache_key = f'version-history-{pkg_type}-{package_name}'
+        cached_data, is_stale = self._load_cached(cache_key)
+        if cached_data and not is_stale:
+            _log.debug('Version history cache hit for %s', package_name)
+            return cached_data
+        
+        # Fetch from git forge
+        try:
+            history = forge.get_releases(owner, repo)
+            if history:
+                self._save_cache(cache_key, history)
+            return history
+        except Exception as e:
+            _log.error('Failed to fetch version history: %s', e)
+            return []
 
 
     @property
@@ -386,6 +442,53 @@ class BrewBackend(GObject.Object):
 
         return formulae, casks
 
+    def _check_outdated(self):
+        """Check for outdated formulae and casks using brew outdated."""
+        _log.debug('_check_outdated() starting')
+        try:
+            with log_timing('brew outdated --json', 'backend'):
+                result = subprocess.run(
+                    _brew_cmd(['outdated', '--json=v2']),
+                    capture_output=True, text=True, timeout=60,
+                )
+            if result.returncode == 0:
+                data = json.loads(result.stdout)
+                
+                formulae = data.get('formulae', [])
+                casks = data.get('casks', [])
+                
+                with self._outdated_lock:
+                    self._outdated_formulae = {}
+                    for f in formulae:
+                        name = f.get('name', '')
+                        if name:
+                            self._outdated_formulae[name] = {
+                                'installed': f.get('installed_versions', [''])[0],
+                                'latest': f.get('current_version', '')
+                            }
+                    
+                    self._outdated_casks = {}
+                    for c in casks:
+                        name = c.get('name', '')
+                        if name:
+                            self._outdated_casks[name] = {
+                                'installed': c.get('installed_versions', [''])[0],
+                                'latest': c.get('current_version', '')
+                            }
+                
+                outdated_list = list(self._outdated_formulae.items()) + list(self._outdated_casks.items())
+                _log.info('Found %d outdated packages (formulae=%d, casks=%d)',
+                         len(outdated_list), len(self._outdated_formulae), len(self._outdated_casks))
+                
+                # Emit signal on main thread
+                GLib.idle_add(self.emit, 'outdated-changed', outdated_list)
+            else:
+                _log.warning('brew outdated returned %d: %s', result.returncode, result.stderr)
+        except json.JSONDecodeError as e:
+            _log.error('Failed to parse brew outdated JSON: %s', e)
+        except Exception as e:
+            _log.error('Failed to check outdated packages: %s', e)
+
     def load_all_async(self):
         """Load all package data asynchronously."""
         _log.info('load_all_async() starting')
@@ -408,6 +511,14 @@ class BrewBackend(GObject.Object):
         # Emit installed signal
         installed_pkgs = []
         GLib.idle_add(self.emit, 'installed-loaded', installed_pkgs)
+
+        # Check for outdated packages if setting is enabled
+        try:
+            settings = Gio.Settings.new('dev.jamesq.Pasar')
+            if settings.get_boolean('outdated-check-enabled'):
+                self._check_outdated()
+        except Exception as e:
+            _log.debug('Could not read outdated-check-enabled setting: %s', e)
 
         # Load formulae from cache first
         data, is_stale = self._load_cached('formulae')
@@ -1229,4 +1340,158 @@ class BrewBackend(GObject.Object):
 
         package._readme_images = absolute
         return absolute
+
+    def _check_outdated(self):
+        """Check for outdated formulae and casks using brew outdated."""
+        _log.info('Checking for outdated packages')
+        try:
+            with log_timing('brew outdated', 'backend'):
+                result = subprocess.run(
+                    _brew_cmd(['outdated', '--json=v2']),
+                    capture_output=True, text=True, timeout=30,
+                )
+            if result.returncode == 0:
+                data = json.loads(result.stdout)
+                outdated_f = {}
+                outdated_c = {}
+
+                # Parse formulae
+                for item in data.get('formulae', []):
+                    name = item.get('name', '')
+                    if name:
+                        outdated_f[name] = {
+                            'installed': item.get('installed_versions', [''])[0] if item.get('installed_versions') else '',
+                            'latest': item.get('current_version', ''),
+                        }
+
+                # Parse casks
+                for item in data.get('casks', []):
+                    name = item.get('name', '')
+                    if name:
+                        outdated_c[name] = {
+                            'installed': item.get('installed_versions', [''])[0] if item.get('installed_versions') else '',
+                            'latest': item.get('current_version', ''),
+                        }
+
+                with self._outdated_lock:
+                    self._outdated_formulae = outdated_f
+                    self._outdated_casks = outdated_c
+
+                total = len(outdated_f) + len(outdated_c)
+                _log.info('Found %d outdated packages (formulae=%d, casks=%d)', 
+                         total, len(outdated_f), len(outdated_c))
+                
+                # Emit signal with combined list
+                outdated_list = list(outdated_f.items()) + list(outdated_c.items())
+                GLib.idle_add(self.emit, 'outdated-changed', outdated_list)
+            else:
+                _log.warning('brew outdated failed with return code %d', result.returncode)
+        except subprocess.TimeoutExpired:
+            _log.warning('brew outdated timed out after 30s')
+        except json.JSONDecodeError as e:
+            _log.error('Failed to parse brew outdated output: %s', e)
+        except Exception as e:
+            _log.error('Failed to check outdated packages: %s', e)
+
+    def get_version_history(self, name, pkg_type):
+        """
+        Fetch version history and GitHub changelogs for a package.
+        Returns list of {version, date, changelog} dicts sorted newest-first.
+        """
+        from datetime import datetime, timedelta
+        
+        if pkg_type == 'formula':
+            package_list = self._formulae
+        elif pkg_type == 'cask':
+            package_list = self._casks
+        else:
+            return []
+
+        # Find the package
+        pkg = None
+        for p in package_list:
+            if p.name == name or p.full_name == name:
+                pkg = p
+                break
+
+        if not pkg:
+            _log.warning('Package not found: %s (%s)', name, pkg_type)
+            return []
+
+        # Extract GitHub repo from source_url
+        source_url = pkg.source_url or ''
+        github_match = None
+        if 'github.com' in source_url:
+            import re
+            m = re.search(r'github\.com/([^/]+)/([^/]+?)(?:\.git)?(?:/|$)', source_url)
+            if m:
+                github_match = (m.group(1), m.group(2))
+
+        if not github_match:
+            _log.debug('No GitHub repo found for %s', name)
+            return []
+
+        owner, repo = github_match
+        cache_dir = os.path.join(self._cache_dir, 'version-history')
+        os.makedirs(cache_dir, exist_ok=True)
+        cache_file = os.path.join(cache_dir, f'{name}-{pkg_type}.json')
+
+        # Check cache age
+        use_cache = False
+        if os.path.exists(cache_file):
+            age = (datetime.now() - datetime.fromtimestamp(os.path.getmtime(cache_file))).total_seconds()
+            if age < 86400:  # 24 hours
+                use_cache = True
+                _log.debug('Using cached version history for %s (age=%.0fs)', name, age)
+
+        if use_cache:
+            try:
+                with open(cache_file) as f:
+                    return json.load(f)
+            except Exception as e:
+                _log.warning('Failed to load version history cache for %s: %s', name, e)
+
+        # Fetch from GitHub API
+        _log.debug('Fetching release history from GitHub: %s/%s', owner, repo)
+        versions = []
+        try:
+            url = f'https://api.github.com/repos/{owner}/{repo}/releases?per_page=50'
+            req = Request(url, headers={
+                'User-Agent': 'Pasar/0.1',
+                'Accept': 'application/vnd.github.v3+json',
+            })
+            with urlopen(req, timeout=10) as resp:
+                releases = json.loads(resp.read().decode('utf-8'))
+
+            for release in releases:
+                if not isinstance(release, dict):
+                    continue
+
+                version = release.get('tag_name', '').lstrip('v')
+                published = release.get('published_at', '')
+                body = release.get('body', '') or ''
+
+                if version:
+                    versions.append({
+                        'version': version,
+                        'date': published[:10] if published else 'unknown',
+                        'changelog': body.strip() or '(No description)',
+                    })
+
+            # Sort newest first
+            versions.sort(key=lambda x: x['date'], reverse=True)
+
+            # Cache the results
+            try:
+                with open(cache_file, 'w') as f:
+                    json.dump(versions, f)
+                _log.debug('Cached version history for %s: %d versions', name, len(versions))
+            except Exception as e:
+                _log.warning('Failed to cache version history for %s: %s', name, e)
+
+            return versions
+
+        except Exception as e:
+            _log.error('Failed to fetch GitHub releases for %s/%s: %s', owner, repo, e)
+            return []
 

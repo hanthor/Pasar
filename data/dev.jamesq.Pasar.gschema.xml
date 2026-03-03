@@ -13,5 +13,16 @@
       <default>false</default>
       <summary>Window maximized state</summary>
     </key>
+    <key name="outdated-check-enabled" type="b">
+      <default>true</default>
+      <summary>Enable automatic outdated package checks</summary>
+      <description>When enabled, Pasar will check for outdated homebrew packages on startup and periodically in the background</description>
+    </key>
+    <key name="outdated-check-interval-hours" type="i">
+      <default>24</default>
+      <summary>Interval in hours for checking outdated packages</summary>
+      <description>Minimum time between consecutive background checks for outdated packages</description>
+      <range min="1" max="168"/>
+    </key>
   </schema>
 </schemalist>

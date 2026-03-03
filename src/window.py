@@ -19,6 +19,8 @@ from .search_page import PasarSearchPage      # noqa: F401
 from .installed_page import PasarInstalledPage  # noqa: F401
 from .global_progress import PasarGlobalProgress # noqa: F401
 from .brewfile_page import PasarBrewfilePage  # noqa: F401
+from .updates_card import UpdatesCard  # noqa: F401
+from .version_history_dialog import PasarVersionHistoryDialog  # noqa: F401
 
 
 @Gtk.Template(resource_path='/dev/jamesq/Pasar/window.ui')
@@ -31,6 +33,7 @@ class PasarWindow(Adw.ApplicationWindow):
     installed_page = Gtk.Template.Child()
     main_stack = Gtk.Template.Child()
     task_button = Gtk.Template.Child()
+    updates_button = Gtk.Template.Child()
     global_progress = Gtk.Template.Child()
     navigation_view = Gtk.Template.Child()
 
@@ -66,6 +69,16 @@ class PasarWindow(Adw.ApplicationWindow):
 
         # Task button in header bar
         self.task_button.connect('clicked', self._on_task_button_clicked)
+
+        # Updates button in header bar
+        self.updates_button.connect('clicked', self._on_updates_button_clicked)
+        self._outdated_count = 0  # Track current outdated package count
+        
+        # Create updates card (will be shown/hidden based on outdated packages)
+        self.updates_card = UpdatesCard()
+        self.updates_card.set_backend(self.backend)
+        self.updates_card.set_task_manager(self.task_manager)
+        self.updates_card.connect('package-history-requested', self._on_package_history_requested)
 
         # Wire pages to backend
         pages_start = time.perf_counter()
@@ -117,6 +130,7 @@ class PasarWindow(Adw.ApplicationWindow):
         self.backend.connect('formulae-loaded', self._on_formulae_loaded)
         self.backend.connect('casks-loaded', self._on_casks_loaded)
         self.backend.connect('installed-loaded', self._on_installed_loaded)
+        self.backend.connect('outdated-changed', self._on_outdated_changed)
         self.backend.connect('notify::loading', self._on_backend_loading_changed)
         _log.info('Kicking off backend.load_all_async()')
         self.backend.load_all_async()
@@ -227,6 +241,33 @@ class PasarWindow(Adw.ApplicationWindow):
     def _on_installed_loaded(self, backend, _):
         _log.debug('Installed-loaded signal received')
 
+    def _on_outdated_changed(self, backend, outdated_data):
+        """Handle backend's outdated-changed signal."""
+        _log.info('Outdated packages changed: %s', outdated_data)
+        
+        if not outdated_data:
+            self._outdated_count = 0
+            self.updates_button.set_label('0')
+            return
+        
+        self._outdated_count = len(outdated_data)
+        self.updates_button.set_label(str(self._outdated_count))
+        
+        # Show toast notification
+        if self._outdated_count > 0:
+            msg = f'{self._outdated_count} package{"s" if self._outdated_count != 1 else ""} can be updated'
+            toast = Adw.Toast.new(msg)
+            self.toast_overlay.add_toast(toast)
+
+    def _on_updates_button_clicked(self, button):
+        """Handle updates button click."""
+        _log.debug('Updates button clicked, outdated count: %d', self._outdated_count)
+        if self._outdated_count > 0:
+            msg = f'{self._outdated_count} update{"s" if self._outdated_count != 1 else ""} available. Click Update All in the updates list.'
+            self.toast_overlay.add_toast(Adw.Toast.new(msg))
+        else:
+            self.toast_overlay.add_toast(Adw.Toast.new('No updates available'))
+
     def _on_backend_loading_changed(self, backend, _pspec):
         if backend.loading:
             return
@@ -261,6 +302,22 @@ class PasarWindow(Adw.ApplicationWindow):
     def _on_install_requested(self, page, package):
         _log.info('Install requested from page: %s (%s)', package.name, package.pkg_type)
         self.task_manager.install(package)
+
+    def _on_package_history_requested(self, card, package):
+        """Open version history dialog for a package."""
+        _log.debug('Package history requested: %s', package.name)
+        version_dialog = PasarVersionHistoryDialog(
+            package=package,
+            backend=self.backend,
+        )
+        version_dialog.connect('pin-version', self._on_pin_version_requested)
+        self.navigation_view.push(version_dialog)
+
+    def _on_pin_version_requested(self, dialog, version):
+        """Handle version pinning request (stretch goal feature)."""
+        _log.info('Pin version requested: %s (not yet implemented)', version)
+        # TODO: Implement version pinning
+        # This would store preference and prevent upgrades
 
     def _on_refresh(self, action, param):
         _log.info('Manual refresh triggered')

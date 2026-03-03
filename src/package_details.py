@@ -9,6 +9,8 @@ from gi.repository import Adw, Gtk, Gio, GObject, Pango
 from .backend import Package, BrewBackend
 from .task_manager import Task, TaskStatus, TaskOperation
 from .logging_util import get_logger
+from .screenshot_lightbox import PasarScreenshotLightbox
+
 
 _log = get_logger('package_details')
 
@@ -40,6 +42,7 @@ class PasarPackageDetails(Adw.NavigationPage):
     error_label = Gtk.Template.Child()
     detail_progress_bar = Gtk.Template.Child()
     screenshot_bin = Gtk.Template.Child()
+    screenshot_button = Gtk.Template.Child()
     screenshot_picture = Gtk.Template.Child()
     readme_bin = Gtk.Template.Child()
     readme_view = Gtk.Template.Child()
@@ -54,6 +57,7 @@ class PasarPackageDetails(Adw.NavigationPage):
         self.install_button.connect('clicked', self._on_install_clicked)
         self.remove_button.connect('clicked', self._on_remove_clicked)
         self.homepage_row.connect('activate', self._on_homepage_activated)
+        self.screenshot_button.connect('clicked', self._on_screenshot_clicked)
 
         if package:
             _log.debug('Opening details for %s (%s)', package.name, package.pkg_type)
@@ -141,8 +145,14 @@ class PasarPackageDetails(Adw.NavigationPage):
                 texture = Gdk.Texture.new_for_pixbuf(pixbuf)
                 self.screenshot_picture.set_paintable(texture)
                 self.screenshot_bin.set_visible(True)
+                self._current_screenshot = texture
             except Exception:
                 pass
+
+    def _on_screenshot_clicked(self, button):
+        if hasattr(self, '_current_screenshot') and self._current_screenshot:
+            lightbox = PasarScreenshotLightbox(self._current_screenshot)
+            lightbox.present_with_animation(self.get_root())
 
     def _on_readme_fetched(self, package, text):
         if not text or package != self._package:

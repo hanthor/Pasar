@@ -48,6 +48,7 @@ pasar_sources = [
   'logging_util.py',
   'window.py',
   'backend.py',
+  'git_forge.py',
   'package_tile.py',
   'package_rich_tile.py',
   'package_details.py',
@@ -59,7 +60,10 @@ pasar_sources = [
   'global_progress.py',
   'brewfile_dialog.py',
   'brewfile_page.py',
-  'search_provider.py'
+  'search_provider.py',
+  'updates_card.py',
+  'version_history_dialog.py',
+  'screenshot_lightbox.py',
 ]
 
 install_data(pasar_sources, install_dir: pkgdatadir / 'pasar')

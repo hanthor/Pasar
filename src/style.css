@@ -174,3 +174,115 @@ button.medium-pill:active {
   color: @error_color;
   border-color: alpha(@error_color, 0.3);
 }
+
+/* ===== Failed flatpak tiles ===== */
+.package-tile.flatpak-failed {
+  opacity: 0.5;
+}
+
+.package-tile.flatpak-failed label {
+  color: alpha(@window_fg_color, 0.65);
+}
+
+/* ===== Updates Banner ===== */
+.updates-banner {
+  background-color: alpha(@accent_bg_color, 0.1);
+  border: 1px solid alpha(@accent_bg_color, 0.2);
+  border-radius: 12px;
+  padding: 12px;
+  margin: 8px;
+}
+
+.updates-banner-header {
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.updates-count-badge {
+  background-color: @accent_bg_color;
+  color: @accent_fg_color;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+/* ===== Updates Button States ===== */
+button.updates-button {
+  min-width: 40px;
+  padding: 6px 12px;
+}
+
+button.updates-button:hover {
+  background-color: alpha(@accent_bg_color, 0.1);
+}
+
+/* Spinner animation for loading state */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.updates-button.checking {
+  animation: spin 1s linear infinite;
+}
+
+/* ===== Version History Dialog ===== */
+.version-row {
+  padding: 8px 12px;
+}
+
+.version-number {
+  font-family: monospace;
+  font-weight: 500;
+}
+
+.version-date {
+  color: alpha(@window_fg_color, 0.6);
+  font-size: 0.9rem;
+}
+
+.changelog-text {
+  font-family: monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* ===== Lightbox ===== */
+.lightbox-overlay {
+  background-color: rgba(0, 0, 0, 0.85);
+  transition: all 300ms ease;
+}
+
+.lightbox-image {
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  transition: transform 150ms ease-out;
+}
+
+.lightbox-close-button {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+  border-radius: 999px;
+  padding: 10px;
+  margin: 16px;
+  transition: all 200ms ease;
+}
+
+.lightbox-close-button:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+.clickable-screenshot {
+  cursor: pointer;
+  transition: transform 200ms ease;
+}
+
+.clickable-screenshot:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}

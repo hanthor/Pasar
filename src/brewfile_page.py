@@ -9,6 +9,8 @@ from gi.repository import Adw, Gtk, GObject, GLib
 import subprocess
 import time
 import threading
+import tempfile
+import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from .backend import Package
 from .package_tile import PasarPackageTile
@@ -42,12 +44,17 @@ class PasarBrewfilePage(Adw.Bin):
         super().__init__(**kwargs)
         self.backend = None
         self.task_manager = None
+        self._brewfile_path = None
         self.parsed_data = None
         self._packages = []
         self._taps_to_add = []
         self._tap_errors = {}
+        self._flatpak_errors = {}
+        self._cask_errors = {}
         self._tile_map = {}  # Maps package name -> (tile, package) for lazy icon loading
         self._tap_lock = threading.Lock()
+        self._flatpak_error_lock = threading.Lock()
+        self._cask_error_lock = threading.Lock()
         self._pending_taps = 0
         self._taps_done_event = threading.Event()
         self._taps_done_event.set()
@@ -66,10 +73,13 @@ class PasarBrewfilePage(Adw.Bin):
         _log.info('=' * 70)
         _log.info('Loading Brewfile: %s', path)
         _log.info('=' * 70)
+        self._brewfile_path = path
         
         overall_start = time.perf_counter()
         self.brewfile_stack.set_visible_child_name('loading')
         self._tap_errors = {}
+        self._flatpak_errors = {}
+        self._cask_errors = {}
         
         # Parse the brewfile
         self.parsed_data = self.backend.parse_brewfile(path)
@@ -262,7 +272,7 @@ class PasarBrewfilePage(Adw.Bin):
                 self._packages.append(pkg)
             
             for cask_name in sorted_casks:
-                pkg = Package(data={'name': cask_name, 'desc': ''}, pkg_type='cask')
+                pkg = Package(data={'token': cask_name, 'name': [cask_name], 'desc': ''}, pkg_type='cask')
                 casks_placeholders.append(pkg)
                 self._packages.append(pkg)
             
@@ -310,6 +320,8 @@ class PasarBrewfilePage(Adw.Bin):
                 
                 if full_pkg:
                     # Update the placeholder package with full data
+                    pkg.set_property('name', full_pkg.name)
+                    pkg.set_property('full-name', full_pkg.full_name)
                     pkg.set_property('description', full_pkg.description)
                     pkg.set_property('homepage', full_pkg.homepage)
                     pkg.set_property('version', full_pkg.version)
@@ -320,8 +332,16 @@ class PasarBrewfilePage(Adw.Bin):
                     elapsed = (time.perf_counter() - start) * 1000
                     _log.debug('Lazy loaded %s (%s): %.1f ms', name, pkg_type, elapsed)
                     
+                    flatpak_error = None
+                    if pkg_type == 'flatpak':
+                        with self._flatpak_error_lock:
+                            flatpak_error = self._flatpak_errors.get(name)
+
+                    if flatpak_error:
+                        GLib.idle_add(self._mark_flatpak_failed, name, flatpak_error)
+
                     # NOW load the icon for this package
-                    if name in self._tile_map:
+                    if name in self._tile_map and not flatpak_error:
                         tile, _ = self._tile_map[name]
                         GLib.idle_add(self._load_tile_icon, tile, pkg)
                     
@@ -409,6 +429,26 @@ class PasarBrewfilePage(Adw.Bin):
             all_total,
         )
 
+    def _mark_flatpak_failed(self, app_id, error_message):
+        """Move failed flatpak tile to bottom, gray it out, and set error tooltip."""
+        if app_id not in self._tile_map:
+            return False
+
+        tile, _ = self._tile_map[app_id]
+        if not tile:
+            return False
+
+        tile.add_css_class('flatpak-failed')
+        tile.set_tooltip_text(error_message)
+
+        try:
+            self.flatpaks_flow.remove(tile)
+            self.flatpaks_flow.append(tile)
+        except Exception as e:
+            _log.debug('Could not reorder failed flatpak tile %s: %s', app_id, e)
+
+        return False
+
     def _populate_tiles(self, formulae, casks, flatpaks):
         """Populate tiles on the main thread - icons loaded lazily later."""
         # Store tile references for lazy icon loading
@@ -454,11 +494,17 @@ class PasarBrewfilePage(Adw.Bin):
         try:
             appstream = self.backend.get_flatpak_info(app_id)
             if appstream:
+                with self._flatpak_error_lock:
+                    self._flatpak_errors.pop(app_id, None)
                 _log.debug('Successfully fetched flatpak metadata for %s', app_id)
                 return Package(data=appstream, pkg_type='flatpak')
             else:
+                with self._flatpak_error_lock:
+                    self._flatpak_errors[app_id] = 'Metadata not found on Flathub for this app ID.'
                 _log.warning('Flathub API returned empty result for flatpak %s (may not exist)', app_id)
         except Exception as e:
+            with self._flatpak_error_lock:
+                self._flatpak_errors[app_id] = str(e)
             _log.warning('Failed to fetch flatpak metadata for %s: %s (using fallback)', app_id, e)
 
         # Create package with Flathub fallback info
@@ -480,6 +526,9 @@ class PasarBrewfilePage(Adw.Bin):
         # Try to find in loaded packages
         for p in pkgs:
             if p.name == name or p.full_name == name:
+                if pkg_type == 'cask':
+                    with self._cask_error_lock:
+                        self._cask_errors.pop(name, None)
                 _log.debug('Found %s in cache', name)
                 return p
         
@@ -490,11 +539,20 @@ class PasarBrewfilePage(Adw.Bin):
             pkg_info = self.backend.get_package_info(name, pkg_type)
             
             if pkg_info:
+                if pkg_type == 'cask':
+                    with self._cask_error_lock:
+                        self._cask_errors.pop(name, None)
                 _log.info('Successfully fetched info for %s', name)
                 return Package(data=pkg_info, pkg_type=pkg_type, installed_set=installed_set)
             else:
+                if pkg_type == 'cask':
+                    with self._cask_error_lock:
+                        self._cask_errors[name] = 'Cask metadata not found from Homebrew API.'
                 _log.warning('Package %s returned no info (may not exist or be from unfetched tap)', name)
         except Exception as e:
+            if pkg_type == 'cask':
+                with self._cask_error_lock:
+                    self._cask_errors[name] = str(e)
             _log.error('Error fetching package info for %s: %s', name, e)
         
         # Create a graceful fallback package with helpful information
@@ -504,6 +562,15 @@ class PasarBrewfilePage(Adw.Bin):
             'desc': 'Package from Brewfile (details not available)',
             'homepage': f'https://brew.sh',  # Generic Homebrew link
         }
+        if pkg_type == 'cask':
+            fallback_data = {
+                'token': name,
+                'full_token': name,
+                'name': [name],
+                'desc': 'Cask from Brewfile (details not available)',
+                'homepage': 'https://brew.sh',
+                'version': '',
+            }
         return Package(data=fallback_data, 
                       pkg_type=pkg_type, installed_set=installed_set)
 
@@ -535,32 +602,158 @@ class PasarBrewfilePage(Adw.Bin):
             self.emit('install-requested', pkg)
 
     def _on_install_all_clicked(self, button):
-        """Install all packages from the Brewfile."""
-        _log.info('Install-all from Brewfile: %d packages', len(self._packages))
-        installed_count = 0
-        for pkg in self._packages:
-            if pkg.pkg_type == 'flatpak':
-                continue
-            if not pkg.installed:
-                self.task_manager.install(pkg)
-                installed_count += 1
-        
-        if installed_count > 0:
-            _log.info('Queued %d packages for installation', installed_count)
+        """Install all packages from the Brewfile using brew bundle on a filtered file."""
+        if not self.parsed_data:
+            _log.warning('Install-all requested but no Brewfile data is loaded')
+            return
+
+        with self._tap_lock:
+            tap_errors = set(self._tap_errors.keys())
+        with self._flatpak_error_lock:
+            flatpak_errors = set(self._flatpak_errors.keys())
+        with self._cask_error_lock:
+            cask_errors = set(self._cask_errors.keys())
+
+        taps = [t for t in self.parsed_data.get('taps', []) if t not in tap_errors]
+        formulae = list(self.parsed_data.get('formulae', []))
+        casks = [c for c in self.parsed_data.get('casks', []) if c not in cask_errors]
+        flatpaks = [f for f in self.parsed_data.get('flatpaks', []) if f not in flatpak_errors]
+
+        lines = []
+        lines.extend([f'tap "{tap}"' for tap in taps])
+        lines.extend([f'brew "{name}"' for name in formulae])
+        lines.extend([f'cask "{name}"' for name in casks])
+        lines.extend([f'flatpak "{app_id}"' for app_id in flatpaks])
+
+        if not lines:
+            _log.warning('Install-all filtered Brewfile is empty; nothing to install')
+            return
+
+        try:
+            temp_file = tempfile.NamedTemporaryFile(
+                mode='w',
+                encoding='utf-8',
+                suffix='.Brewfile',
+                prefix='pasar-bundle-',
+                delete=False,
+            )
+            with temp_file:
+                temp_file.write('\n'.join(lines) + '\n')
+            filtered_path = temp_file.name
+        except Exception as e:
+            _log.error('Failed to create filtered Brewfile for install-all: %s', e)
+            return
+
+        _log.info(
+            'Install-all via brew bundle using filtered Brewfile: %s (kept taps=%d formulae=%d casks=%d flatpaks=%d; dropped taps=%d casks=%d flatpaks=%d)',
+            filtered_path,
+            len(taps),
+            len(formulae),
+            len(casks),
+            len(flatpaks),
+            len(tap_errors),
+            len(cask_errors),
+            len(flatpak_errors),
+        )
+
+        def run_bundle_install():
+            from .backend import _brew_cmd
+            cmd = _brew_cmd(['bundle', '--file', filtered_path])
+            try:
+                result = subprocess.run(cmd, capture_output=True, text=True)
+                if result.returncode == 0:
+                    _log.info('brew bundle completed successfully for %s', filtered_path)
+                else:
+                    stderr = (result.stderr or '').strip()
+                    stdout = (result.stdout or '').strip()
+                    detail = stderr or stdout or 'Unknown brew bundle error'
+                    _log.error('brew bundle failed (%d): %s', result.returncode, detail)
+            except Exception as e:
+                _log.error('Failed running brew bundle: %s', e)
+            finally:
+                try:
+                    os.unlink(filtered_path)
+                except Exception:
+                    pass
+
+        thread = threading.Thread(target=run_bundle_install, daemon=True)
+        thread.start()
 
     def _on_remove_all_clicked(self, button):
-        """Remove all packages from the Brewfile."""
-        _log.info('Remove-all from Brewfile: %d packages', len(self._packages))
-        removed_count = 0
-        for pkg in self._packages:
-            if pkg.pkg_type == 'flatpak':
-                continue
-            if pkg.installed:
-                self.task_manager.remove(pkg)
-                removed_count += 1
-        
-        if removed_count > 0:
-            _log.info('Queued %d packages for removal', removed_count)
+        """Remove all packages from the Brewfile using brew uninstall for efficient bulk removal."""
+        if not self.parsed_data:
+            _log.warning('Remove-all requested but no Brewfile data is loaded')
+            return
+
+        with self._tap_lock:
+            tap_errors = set(self._tap_errors.keys())
+        with self._flatpak_error_lock:
+            flatpak_errors = set(self._flatpak_errors.keys())
+        with self._cask_error_lock:
+            cask_errors = set(self._cask_errors.keys())
+
+        # Filter to error-free packages only
+        casks = [c for c in self.parsed_data.get('casks', []) if c not in cask_errors]
+        formulae = list(self.parsed_data.get('formulae', []))
+        flatpaks = [f for f in self.parsed_data.get('flatpaks', []) if f not in flatpak_errors]
+
+        if not casks and not formulae and not flatpaks:
+            _log.warning('Remove-all filtered list is empty; nothing to remove')
+            return
+
+        _log.info(
+            'Remove-all via uninstall using filtered list (formulae=%d casks=%d flatpaks=%d; dropped casks=%d flatpaks=%d)',
+            len(formulae),
+            len(casks),
+            len(flatpaks),
+            len(cask_errors),
+            len(flatpak_errors),
+        )
+
+        def run_bulk_removal():
+            from .backend import _brew_cmd
+            
+            # Remove formulae
+            if formulae:
+                try:
+                    cmd = _brew_cmd(['uninstall', '--formula'] + formulae)
+                    result = subprocess.run(cmd, capture_output=True, text=True)
+                    if result.returncode == 0:
+                        _log.info('brew uninstall --formula completed for %d packages', len(formulae))
+                    else:
+                        stderr = (result.stderr or '').strip()
+                        _log.warning('brew uninstall --formula had non-zero exit (%d): %s', result.returncode, stderr)
+                except Exception as e:
+                    _log.error('Failed running brew uninstall for formulae: %s', e)
+            
+            # Remove casks
+            if casks:
+                try:
+                    cmd = _brew_cmd(['uninstall', '--cask'] + casks)
+                    result = subprocess.run(cmd, capture_output=True, text=True)
+                    if result.returncode == 0:
+                        _log.info('brew uninstall --cask completed for %d packages', len(casks))
+                    else:
+                        stderr = (result.stderr or '').strip()
+                        _log.warning('brew uninstall --cask had non-zero exit (%d): %s', result.returncode, stderr)
+                except Exception as e:
+                    _log.error('Failed running brew uninstall for casks: %s', e)
+            
+            # Remove flatpaks
+            if flatpaks:
+                try:
+                    cmd = ['flatpak', 'uninstall', '-y'] + flatpaks
+                    result = subprocess.run(cmd, capture_output=True, text=True)
+                    if result.returncode == 0:
+                        _log.info('flatpak uninstall completed for %d packages', len(flatpaks))
+                    else:
+                        stderr = (result.stderr or '').strip()
+                        _log.warning('flatpak uninstall had non-zero exit (%d): %s', result.returncode, stderr)
+                except Exception as e:
+                    _log.error('Failed running flatpak uninstall: %s', e)
+
+        thread = threading.Thread(target=run_bulk_removal, daemon=True)
+        thread.start()
 
     def _open_flatpak_in_bazaar(self, package):
         """Open a flatpak app id using appstream URI so MIME/xdg routing can launch Bazaar."""

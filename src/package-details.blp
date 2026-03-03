@@ -140,17 +140,21 @@ template $PasarPackageDetails: Adw.NavigationPage {
                 styles ["caption", "error"]
               }
 
+
               /* Screenshot (shown only when image is available) */
               Adw.Bin screenshot_bin {
                 visible: false;
                 overflow: hidden;
-                styles ["card"]
+                styles ["card", "clickable-screenshot"]
 
-                Picture screenshot_picture {
-                  can-shrink: true;
-                  content-fit: contain;
-                  height-request: 300;
-                }
+                child: Button screenshot_button {
+                  styles ["flat"]
+                  child: Picture screenshot_picture {
+                    can-shrink: true;
+                    content-fit: contain;
+                    height-request: 300;
+                  };
+                };
               }
 
               Separator {}

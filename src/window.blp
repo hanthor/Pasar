@@ -39,6 +39,14 @@ template $PasarWindow: Adw.ApplicationWindow {
             }
 
             [end]
+            Button updates_button {
+              tooltip-text: "Check for package updates";
+              label: "0";
+
+              styles ["flat"]
+            }
+
+            [end]
             MenuButton {
               primary: true;
               icon-name: "open-menu-symbolic";
