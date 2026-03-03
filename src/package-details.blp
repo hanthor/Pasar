@@ -218,6 +218,8 @@ template $PasarPackageDetails: Adw.NavigationPage {
 
                       Label license_label {
                         xalign: 1.0;
+                        ellipsize: end;
+                        max-width-chars: 30;
                         styles ["dim-label"]
                       }
                     }
@@ -288,17 +290,45 @@ template $PasarPackageDetails: Adw.NavigationPage {
                   styles ["title-2"]
                 }
 
-                TextView readme_view {
-                  editable: false;
-                  cursor-visible: false;
-                  wrap-mode: word_char;
-                  left-margin: 4;
-                  right-margin: 4;
-                  top-margin: 4;
-                  bottom-margin: 4;
-                  pixels-above-lines: 2;
-                  pixels-below-lines: 2;
-                  styles ["readme"]
+                Box readme_card_box {
+                  orientation: vertical;
+                  styles ["card", "readme-card"]
+
+                  ScrolledWindow readme_scrolled {
+                    hscrollbar-policy: never;
+                    vscrollbar-policy: never;
+                    propagate-natural-height: true;
+                    max-content-height: 300;
+                    styles ["readme-truncated"]
+
+                    TextView readme_view {
+                      editable: false;
+                      cursor-visible: false;
+                      wrap-mode: word_char;
+                      left-margin: 12;
+                      right-margin: 12;
+                      top-margin: 12;
+                      bottom-margin: 12;
+                      pixels-above-lines: 4;
+                      pixels-below-lines: 4;
+                      styles ["readme"]
+                    }
+                  }
+
+                  Button read_more_button {
+                    label: "Read More";
+                    halign: fill;
+                    styles ["flat", "read-more-button"]
+                  }
+
+                  Box {
+                    halign: end;
+                    Button debug_render_button {
+                      icon-name: "tools-check-spelling-symbolic";
+                      tooltip-text: "Debug Rendered Output";
+                      styles ["flat", "circular", "debug-button"]
+                    }
+                  }
                 }
               }
 

@@ -222,6 +222,7 @@ button.updates-button:hover {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -252,6 +253,32 @@ button.updates-button:hover {
   line-height: 1.5;
 }
 
+/* ===== README Refinements ===== */
+.readme-card {
+  padding: 12px;
+  background-color: @card_bg_color;
+  border-radius: 12px;
+  border: 1px solid alpha(@borders, 0.7);
+}
+
+.readme-truncated {
+  /* Truncation handled in Python/Blueprint via size-request and ScrolledWindow */
+}
+
+.read-more-button {
+  border-radius: 0 0 12px 12px;
+  background-color: @card_bg_color;
+  border-top: 1px solid alpha(@borders, 0.3);
+}
+
+.debug-button {
+  opacity: 0.6;
+}
+
+.debug-button:hover {
+  opacity: 1.0;
+}
+
 /* ===== Lightbox ===== */
 .lightbox-overlay {
   background-color: rgba(0, 0, 0, 0.85);
@@ -278,7 +305,6 @@ button.updates-button:hover {
 }
 
 .clickable-screenshot {
-  cursor: pointer;
   transition: transform 200ms ease;
 }
 

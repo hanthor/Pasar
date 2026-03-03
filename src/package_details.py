@@ -5,7 +5,7 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Adw, Gtk, Gio, GObject, Pango
+from gi.repository import Adw, Gtk, Gdk, Gio, GLib, GObject, Pango
 from .backend import Package, BrewBackend
 from .task_manager import Task, TaskStatus, TaskOperation
 from .logging_util import get_logger
@@ -45,7 +45,10 @@ class PasarPackageDetails(Adw.NavigationPage):
     screenshot_button = Gtk.Template.Child()
     screenshot_picture = Gtk.Template.Child()
     readme_bin = Gtk.Template.Child()
+    readme_scrolled = Gtk.Template.Child()
     readme_view = Gtk.Template.Child()
+    read_more_button = Gtk.Template.Child()
+    debug_render_button = Gtk.Template.Child()
 
     def __init__(self, package=None, backend=None, task_manager=None, **kwargs):
         super().__init__(**kwargs)
@@ -58,6 +61,11 @@ class PasarPackageDetails(Adw.NavigationPage):
         self.remove_button.connect('clicked', self._on_remove_clicked)
         self.homepage_row.connect('activate', self._on_homepage_activated)
         self.screenshot_button.connect('clicked', self._on_screenshot_clicked)
+        self.read_more_button.connect('clicked', self._on_read_more_clicked)
+        self.debug_render_button.connect('clicked', self._on_debug_render_clicked)
+
+        # Set cursor for screenshot button
+        self.screenshot_button.set_cursor(Gdk.Cursor.new_from_name('pointer', None))
 
         if package:
             _log.debug('Opening details for %s (%s)', package.name, package.pkg_type)
@@ -205,18 +213,18 @@ class PasarPackageDetails(Adw.NavigationPage):
 
         # Collapse lines that are now blank
         text = re.sub(r'\n[ \t]*\n[ \t]*\n', '\n\n', text)
+        
+        _log.debug('Rendering README, length: %d chars', len(text))
 
         # ── Append helper ─────────────────────────────────────────────────────
         it = buf.get_end_iter()
 
         def append(s, tag_name=None):
-            nonlocal it
-            mark = buf.create_mark(None, it, True)
-            buf.insert(it, s)
+            it = buf.get_end_iter()
             if tag_name:
-                start = buf.get_iter_at_mark(mark)
-                buf.apply_tag_by_name(tag_name, start, it)
-            buf.delete_mark(mark)
+                buf.insert_with_tags_by_name(it, s, tag_name)
+            else:
+                buf.insert(it, s)
 
         def render_inline(line, default_tag=None):
             """Render a line with inline bold/italic/code tags."""
@@ -327,9 +335,80 @@ class PasarPackageDetails(Adw.NavigationPage):
                 continue
 
             # Normal paragraph text
-            render_inline(line)
-            append('\n')
+            append(line + '\n')
             i += 1
+
+        # Check if we should show "Read More"
+        GLib.idle_add(self._check_readme_height)
+
+    def _check_readme_height(self):
+        # Allow natural height calculation to pick up the content size
+        self.readme_view.queue_resize()
+        
+        adj = self.readme_view.get_vadjustment()
+        upper = adj.get_upper()
+        _log.debug('README upper: %s', upper)
+        
+        if upper > 0:
+            if upper > 310: # If content is larger than our truncation threshold
+                self.readme_scrolled.set_max_content_height(300)
+                self.read_more_button.set_visible(True)
+            else:
+                self.readme_scrolled.set_max_content_height(10000) # Show all
+                self.read_more_button.set_visible(False)
+        else:
+            # If still 0, maybe the text hasn't rendered yet, try again soon
+            GLib.timeout_add(100, self._check_readme_height)
+
+    def _on_read_more_clicked(self, button):
+        if self.read_more_button.get_label() == 'Read More':
+            # Expand: set a very large height limit so it grows to show all text
+            self.readme_scrolled.set_max_content_height(10000)
+            self.read_more_button.set_label('Show Less')
+            self.read_more_button.remove_css_class('read-more-button')
+        else:
+            # Truncate: back to 300px
+            self.readme_scrolled.set_max_content_height(300)
+            self.read_more_button.set_label('Read More')
+            self.read_more_button.add_css_class('read-more-button')
+            
+        # Ensure the layout updates
+        self.readme_scrolled.queue_resize()
+
+    def _on_debug_render_clicked(self, button):
+        # Show a dialog with the "debug" info about the rendered buffer
+        buf = self.readme_view.get_buffer()
+        text = buf.get_text(buf.get_start_iter(), buf.get_end_iter(), True)
+        
+        # Count tags
+        tag_stats = {}
+        it = buf.get_start_iter()
+        while not it.is_end():
+            tags = it.get_tags()
+            for t in tags:
+                name = t.get_property('name') or 'unnamed'
+                tag_stats[name] = tag_stats.get(name, 0) + 1
+            it.forward_char()
+
+        stats_str = "\n".join([f"{name}: {count} chars" for name, count in tag_stats.items()])
+        
+        from .logging_util import get_logger
+        _log = get_logger('package_details')
+        _log.debug('README Debug Info:\n%s', stats_str)
+
+        msg = f"<b>Render Stats:</b>\n{stats_str}\n\n<b>Raw Text:</b>\n{text[:500]}..."
+        
+        dialog = Adw.MessageDialog.new(
+            self.get_root(),
+            "README Render Debug",
+            ""
+        )
+        dialog.set_body_use_markup(True)
+        dialog.set_body(msg)
+        dialog.add_response("close", "Close")
+        dialog.set_default_response("close")
+        dialog.set_close_response("close")
+        dialog.present()
 
 
 
