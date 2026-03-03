@@ -26,6 +26,11 @@ Pasar is a modern, fast, and beautiful Homebrew client for Linux, built with **P
 - Python 3.10+
 - GTK 4 and Libadwaita development headers.
 
+```
+brew install gtk4 libadwaita meson ninja pygobject3 gettext desktop-file-utils blueprint-compiler
+
+```
+
 ### Installation (Development)
 
 1. Clone the repository:
