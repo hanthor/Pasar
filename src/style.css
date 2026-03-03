@@ -254,11 +254,27 @@ button.updates-button:hover {
 }
 
 /* ===== README Refinements ===== */
-.readme-card {
-  padding: 12px;
-  background-color: @card_bg_color;
+.readme-container {
+  transition: all 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  background-color: transparent;
   border-radius: 12px;
-  border: 1px solid alpha(@borders, 0.7);
+  border: 1px solid transparent;
+  margin-top: 4px;
+}
+
+.readme-container.expanded {
+  background-color: @card_bg_color;
+  border-color: alpha(@borders, 0.7);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  padding: 12px;
+}
+
+textview.readme {
+  background-color: transparent;
+}
+
+textview.readme>text {
+  background-color: transparent;
 }
 
 .readme-truncated {
@@ -266,9 +282,25 @@ button.updates-button:hover {
 }
 
 .read-more-button {
-  border-radius: 0 0 12px 12px;
-  background-color: @card_bg_color;
-  border-top: 1px solid alpha(@borders, 0.3);
+  background-color: alpha(@window_fg_color, 0.05);
+  font-weight: bold;
+  border-radius: 12px;
+  margin-top: 12px;
+  transition: all 200ms ease;
+}
+
+.read-more-button:hover {
+  background-color: alpha(@window_fg_color, 0.1);
+}
+
+.readme-container.expanded .read-more-button {
+  margin-top: 16px;
+  background-color: transparent;
+  border: 1px solid alpha(@borders, 0.5);
+}
+
+.readme-container.expanded .read-more-button:hover {
+  background-color: alpha(@window_fg_color, 0.05);
 }
 
 .debug-button {

@@ -45,6 +45,7 @@ class PasarPackageDetails(Adw.NavigationPage):
     screenshot_button = Gtk.Template.Child()
     screenshot_picture = Gtk.Template.Child()
     readme_bin = Gtk.Template.Child()
+    readme_card_box = Gtk.Template.Child()
     readme_scrolled = Gtk.Template.Child()
     readme_view = Gtk.Template.Child()
     read_more_button = Gtk.Template.Child()
@@ -365,12 +366,12 @@ class PasarPackageDetails(Adw.NavigationPage):
             # Expand: set a very large height limit so it grows to show all text
             self.readme_scrolled.set_max_content_height(10000)
             self.read_more_button.set_label('Show Less')
-            self.read_more_button.remove_css_class('read-more-button')
+            self.readme_card_box.add_css_class('expanded')
         else:
             # Truncate: back to 300px
             self.readme_scrolled.set_max_content_height(300)
             self.read_more_button.set_label('Read More')
-            self.read_more_button.add_css_class('read-more-button')
+            self.readme_card_box.remove_css_class('expanded')
             
         # Ensure the layout updates
         self.readme_scrolled.queue_resize()

@@ -292,11 +292,11 @@ template $PasarPackageDetails: Adw.NavigationPage {
 
                 Box readme_card_box {
                   orientation: vertical;
-                  styles ["card", "readme-card"]
+                  styles ["readme-container"]
 
                   ScrolledWindow readme_scrolled {
                     hscrollbar-policy: never;
-                    vscrollbar-policy: never;
+                    vscrollbar-policy: external;
                     propagate-natural-height: true;
                     max-content-height: 300;
                     styles ["readme-truncated"]
