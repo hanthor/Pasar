@@ -11,16 +11,14 @@ jobs:
     name: "Flatpak Build"
     runs-on: ubuntu-latest
     container:
-      image: registry.gitlab.gnome.org/gnome/gnome-runtime-images/gnome:47
+      image: bilelmoussaoui/flatpak-github-actions:gnome-49
       options: --privileged
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install dependencies
-      run: |
-        dnf install -y flatpak-builder
-
-    - name: Build Flatpak
-      run: |
-        flatpak-builder --no-repo --prefix=/app build dev.jamesq.Pasar.json
+    - uses: bilelmoussaoui/flatpak-github-actions/flatpak-builder@v6
+      with:
+        bundle: pasar.flatpak
+        manifest-path: dev.jamesq.Pasar.json
+        cache-key: flatpak-builder-${{ github.sha }}
