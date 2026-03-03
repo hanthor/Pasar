@@ -67,7 +67,9 @@ class PasarApplication(Adw.Application):
             _log.info('Opening package from command-line: %s', package_name)
             self._package_to_open = package_name
 
-        self.activate()
+        if '--gapplication-service' not in args:
+            self.activate()
+            
         return 0
 
 

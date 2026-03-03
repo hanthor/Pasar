@@ -112,15 +112,15 @@ class PasarSearchProvider:
 
         results = []
         for pkg in self._packages_cache:
-            name = pkg.get('name', '').lower()
-            display_name = pkg.get('display_name', '').lower()
-            desc = pkg.get('description', '').lower()
+            name = (pkg.get('name') or '').lower()
+            display_name = (pkg.get('display_name') or '').lower()
+            desc = (pkg.get('description') or '').lower()
 
             if query in name or query in display_name or query in desc:
                 results.append(pkg)
 
         def sort_key(pkg):
-            n = pkg.get('name', '').lower()
+            n = (pkg.get('name') or '').lower()
             if n == query:
                 return (0, n)
             if n.startswith(query):
@@ -129,7 +129,7 @@ class PasarSearchProvider:
 
         results.sort(key=sort_key)
         # Limit to reasonable number of results for GNOME shell
-        return [p.get('name') for p in results[:20]]
+        return [p.get('name') for p in results[:20] if p.get('name')]
 
     def _handle_method_call(self, connection, sender, object_path, interface_name, method_name, parameters, invocation):
         _log.debug('SearchProvider method called: %s', method_name)
@@ -166,7 +166,7 @@ class PasarSearchProvider:
                 
                 # Assign default icon based on package type
                 icon_name = "dev.jamesq.Pasar-symbolic" # Default
-                meta["icon"] = GLib.Icon.new_for_string(icon_name).serialize()
+                meta["icon"] = Gio.Icon.new_for_string(icon_name).serialize()
                 
                 metas.append(meta)
 
