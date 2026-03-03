@@ -56,7 +56,20 @@ meson compile -C builddir run
 
 ## 📦 Flatpak
 
-Pasar can be built as a Flatpak:
+### Install latest build from CI
+
+Download and install the latest Flatpak bundle built from the `main` branch:
+
+```bash
+# Download the latest CI build
+wget https://nightly.link/hanthor/Pasar/workflows/flatpak/main/pasar.flatpak.zip
+unzip pasar.flatpak.zip
+flatpak install --user pasar.flatpak
+```
+
+Or just grab the zip directly: [pasar.flatpak.zip](https://nightly.link/hanthor/Pasar/workflows/flatpak/main/pasar.flatpak.zip)
+
+### Build from source
 
 ```bash
 flatpak-builder --force-clean --user --install flatpak-build dev.jamesq.Pasar.json
