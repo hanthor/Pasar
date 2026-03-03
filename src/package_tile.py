@@ -80,10 +80,24 @@ class PasarPackageTile(Gtk.Box):
         """Update the tile icon from a GdkPixbuf (called from the main thread via GLib.idle_add)."""
         if pixbuf is None:
             return
+        
+        from .logging_util import get_logger
+        _log = get_logger('package_tile')
+        
+        if not hasattr(self, 'package_icon') or self.package_icon is None:
+            _log.warning('package_icon widget not initialized for %s', 
+                        self._package.name if self._package else 'unknown')
+            return
+        
         try:
             from gi.repository import Gdk
             texture = Gdk.Texture.new_for_pixbuf(pixbuf)
-            self.package_icon.set_paintable(texture)
-        except Exception:
-            pass
+            self.package_icon.set_from_paintable(texture)
+            if self._package:
+                _log.debug('Set icon for %s: %dx%d', self._package.name, pixbuf.get_width(), pixbuf.get_height())
+        except Exception as e:
+            if self._package:
+                _log.warning('Failed to set icon for %s: %s', self._package.name, e)
+            else:
+                _log.warning('Failed to set icon: %s', e)
 

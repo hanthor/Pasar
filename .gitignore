@@ -7,3 +7,6 @@ hack/
 flatpak-build/
 .flatpak-builder/
 .flatpak-repo/
+.flatpak-state/
+.venv/
+.pytest_cache/

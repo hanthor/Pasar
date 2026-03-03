@@ -44,6 +44,7 @@ pasar_sources = [
   '__init__.py',
   'main.py',
   'application.py',
+  'logging_util.py',
   'window.py',
   'backend.py',
   'package_tile.py',

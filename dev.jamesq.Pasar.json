@@ -12,7 +12,7 @@
         "--share=network",
         "--talk-name=org.freedesktop.Flatpak",
         "--filesystem=home",
-        "--filesystem=/var/home/linuxbrew:ro",
+        "--filesystem=/home/linuxbrew:ro",
         "--env=HOMEBREW_NO_AUTO_UPDATE=1"
 
     ],

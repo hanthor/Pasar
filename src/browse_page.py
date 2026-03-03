@@ -8,6 +8,9 @@ gi.require_version('Adw', '1')
 from gi.repository import Adw, Gtk, GObject
 from .backend import BrewBackend
 from .package_tile import PasarPackageTile
+from .logging_util import get_logger
+
+_log = get_logger('browse_page')
 
 
 # Well-known popular formulae to feature
@@ -50,11 +53,13 @@ class PasarBrowsePage(Adw.Bin):
         self.browse_stack.set_visible_child_name('loading')
 
     def populate_formulae(self, packages):
+        _log.debug('populate_formulae: %d packages', len(packages))
         self._fill_flow(self.popular_flow, packages, POPULAR_FORMULAE)
         self._fill_recent(packages)
         self._maybe_show_content()
 
     def populate_casks(self, packages):
+        _log.debug('populate_casks: %d packages', len(packages))
         self._fill_flow(self.casks_flow, packages, POPULAR_CASKS)
         self._maybe_show_content()
 

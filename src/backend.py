@@ -1,8 +1,10 @@
 # backend.py - Homebrew backend using the formulae.brew.sh JSON API + local brew CLI
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import io
 import json
 import os
+import struct
 import subprocess
 import threading
 from urllib.request import urlopen, Request
@@ -11,6 +13,10 @@ from urllib.error import URLError
 import gi
 gi.require_version('GdkPixbuf', '2.0')
 from gi.repository import Gio, GLib, GObject, GdkPixbuf
+
+from .logging_util import get_logger, profile, log_timing
+
+_log = get_logger('backend')
 
 
 # Homebrew API endpoints
@@ -22,7 +28,9 @@ CASK_DETAIL_API = 'https://formulae.brew.sh/api/cask/{}.json'
 
 def _is_flatpak():
     """Detect if running inside a Flatpak sandbox."""
-    return os.path.exists('/.flatpak-info')
+    result = os.path.exists('/.flatpak-info')
+    _log.debug('Flatpak detection: %s', result)
+    return result
 
 
 def _find_brew():
@@ -34,19 +42,117 @@ def _find_brew():
     ]
     for c in candidates:
         if os.path.isfile(c) and os.access(c, os.X_OK):
+            _log.info('Found brew at %s', c)
             return c
     # fallback: try PATH
     try:
         result = subprocess.run(['which', 'brew'], capture_output=True, text=True)
         if result.returncode == 0:
-            return result.stdout.strip()
+            path = result.stdout.strip()
+            _log.info('Found brew via PATH at %s', path)
+            return path
     except Exception:
         pass
+    _log.warning('brew executable not found; falling back to bare "brew"')
     return 'brew'
 
 
 IN_FLATPAK = _is_flatpak()
 BREW_BIN = _find_brew()
+
+
+def _ico_to_png(ico_data):
+    """
+    Extract the best image from an ICO file and return PNG bytes,
+    or None if conversion fails.
+
+    ICO files are containers holding multiple images.  Each entry is
+    either an embedded PNG or a raw 32-bit BGRA BMP DIB.  We pick the
+    largest one and, if it's already PNG, return it directly; otherwise
+    we decode the BGRA pixel data and build a PNG with zlib.
+    """
+    import zlib
+
+    try:
+        if len(ico_data) < 6:
+            return None
+
+        # ICO header: reserved(2) + type(2) + count(2)
+        _reserved, ico_type, count = struct.unpack_from('<HHH', ico_data, 0)
+        if ico_type not in (1, 2) or count == 0 or count > 256:
+            return None
+
+        # Parse directory entries (16 bytes each, starting at offset 6)
+        best_entry = None
+        best_size = 0
+        for i in range(count):
+            offset = 6 + i * 16
+            if offset + 16 > len(ico_data):
+                break
+            w = ico_data[offset] or 256
+            h = ico_data[offset + 1] or 256
+            data_size = struct.unpack_from('<I', ico_data, offset + 8)[0]
+            data_offset = struct.unpack_from('<I', ico_data, offset + 12)[0]
+            pixels = w * h
+            if pixels >= best_size and data_offset + data_size <= len(ico_data):
+                best_size = pixels
+                best_entry = (w, h, data_size, data_offset)
+
+        if not best_entry:
+            return None
+
+        w, h, data_size, data_offset = best_entry
+        image_data = ico_data[data_offset:data_offset + data_size]
+
+        # Check if the embedded image is already PNG
+        if image_data[:8] == b'\x89PNG\r\n\x1a\n':
+            return image_data
+
+        # --- BMP DIB → PNG (pure Python) ---
+        dib_header_size = struct.unpack_from('<I', image_data, 0)[0]
+        bpp = struct.unpack_from('<H', image_data, 14)[0]
+        if bpp != 32:
+            return None  # Only handle 32-bit BGRA
+
+        # Pixel data starts right after the DIB header
+        pixel_start = dib_header_size
+        row_bytes = w * 4  # 32-bit = 4 bytes per pixel
+        # BMP rows are bottom-up; also there may be an AND mask after the XOR data
+        # The XOR (colour) bitmap is w*h*4 bytes
+        xor_size = w * h * 4
+
+        if pixel_start + xor_size > len(image_data):
+            return None
+
+        # Build RGBA rows (top-to-bottom) for PNG
+        raw_rows = bytearray()
+        for y in range(h - 1, -1, -1):  # BMP is bottom-up
+            row_off = pixel_start + y * row_bytes
+            raw_rows.append(0)  # PNG filter byte: None
+            for x in range(w):
+                px = row_off + x * 4
+                b = image_data[px]
+                g = image_data[px + 1]
+                r = image_data[px + 2]
+                a = image_data[px + 3]
+                raw_rows.extend((r, g, b, a))
+
+        # Construct minimal PNG file
+        def _png_chunk(chunk_type, data):
+            chunk = chunk_type + data
+            crc = struct.pack('>I', zlib.crc32(chunk) & 0xFFFFFFFF)
+            return struct.pack('>I', len(data)) + chunk + crc
+
+        signature = b'\x89PNG\r\n\x1a\n'
+        ihdr_data = struct.pack('>IIBBBBB', w, h, 8, 6, 0, 0, 0)  # 8-bit RGBA
+        ihdr = _png_chunk(b'IHDR', ihdr_data)
+        idat = _png_chunk(b'IDAT', zlib.compress(bytes(raw_rows), 9))
+        iend = _png_chunk(b'IEND', b'')
+
+        return signature + ihdr + idat + iend
+
+    except Exception:
+        return None
 
 
 def _brew_cmd(args):
@@ -135,6 +241,7 @@ class BrewBackend(GObject.Object):
         self._installed_casks = set()
         self._cache_dir = os.path.join(GLib.get_user_cache_dir(), 'pasar')
         os.makedirs(self._cache_dir, exist_ok=True)
+        _log.debug('BrewBackend init  cache_dir=%s', self._cache_dir)
 
     def parse_brewfile(self, path):
         import re
@@ -155,7 +262,9 @@ class BrewBackend(GObject.Object):
                         m = re.match(r'cask\s+["\']([^"\']+)["\']', line)
                         if m: casks.append(m.group(1))
         except Exception as e:
-            print(f"Pasar: Error parsing Brewfile: {e}")
+            _log.error('Error parsing Brewfile: %s', e)
+        _log.info('Parsed Brewfile: %d taps, %d formulae, %d casks',
+                  len(taps), len(formulae), len(casks))
         return {'taps': taps, 'formulae': formulae, 'casks': casks}
 
 
@@ -169,12 +278,17 @@ class BrewBackend(GObject.Object):
 
     def _fetch_json(self, url):
         """Fetch JSON from URL with a timeout."""
+        _log.debug('Fetching JSON: %s', url)
         req = Request(url, headers={'User-Agent': 'Pasar/0.1'})
         try:
-            with urlopen(req, timeout=30) as resp:
-                return json.loads(resp.read().decode('utf-8'))
+            with log_timing(f'fetch_json {url}', 'backend'):
+                with urlopen(req, timeout=30) as resp:
+                    data = json.loads(resp.read().decode('utf-8'))
+            _log.debug('Fetched JSON OK: %s  (items=%s)',
+                       url, len(data) if isinstance(data, list) else '?')
+            return data
         except (URLError, json.JSONDecodeError, Exception) as e:
-            print(f'Pasar: Failed to fetch {url}: {e}')
+            _log.error('Failed to fetch %s: %s', url, e)
             return None
 
     def _cache_path(self, name):
@@ -185,48 +299,58 @@ class BrewBackend(GObject.Object):
         if os.path.exists(path):
             try:
                 age = GLib.get_real_time() / 1e6 - os.path.getmtime(path)
+                stale = age > 3600
                 with open(path) as f:
                     data = json.load(f)
-                return data, age > 3600  # Return data and whether it's stale
-            except Exception:
-                pass
+                _log.debug('Cache hit: %s  age=%.0fs  stale=%s', name, age, stale)
+                return data, stale
+            except Exception as e:
+                _log.warning('Cache read failed for %s: %s', name, e)
+        else:
+            _log.debug('Cache miss: %s', name)
         return None, True
 
     def _save_cache(self, name, data):
         try:
             with open(self._cache_path(name), 'w') as f:
                 json.dump(data, f)
-        except Exception:
-            pass
+            _log.debug('Cache saved: %s', name)
+        except Exception as e:
+            _log.warning('Cache write failed for %s: %s', name, e)
 
     def _get_installed(self):
         """Get sets of installed formula and cask names."""
         formulae = set()
         casks = set()
         try:
-            result = subprocess.run(
-                _brew_cmd(['list', '--formula', '-1']),
-                capture_output=True, text=True, timeout=30,
-            )
+            with log_timing('brew list --formula', 'backend'):
+                result = subprocess.run(
+                    _brew_cmd(['list', '--formula', '-1']),
+                    capture_output=True, text=True, timeout=30,
+                )
             if result.returncode == 0:
                 formulae = set(result.stdout.strip().split('\n')) - {''}
+                _log.info('Installed formulae: %d', len(formulae))
         except Exception as e:
-            print(f'Pasar: Failed to list installed formulae: {e}')
+            _log.error('Failed to list installed formulae: %s', e)
 
         try:
-            result = subprocess.run(
-                _brew_cmd(['list', '--cask', '-1']),
-                capture_output=True, text=True, timeout=30,
-            )
+            with log_timing('brew list --cask', 'backend'):
+                result = subprocess.run(
+                    _brew_cmd(['list', '--cask', '-1']),
+                    capture_output=True, text=True, timeout=30,
+                )
             if result.returncode == 0:
                 casks = set(result.stdout.strip().split('\n')) - {''}
+                _log.info('Installed casks: %d', len(casks))
         except Exception as e:
-            print(f'Pasar: Failed to list installed casks: {e}')
+            _log.error('Failed to list installed casks: %s', e)
 
         return formulae, casks
 
     def load_all_async(self):
         """Load all package data asynchronously."""
+        _log.info('load_all_async() starting')
         self.loading = True
         # Core API fetch thread
         thread = threading.Thread(target=self._load_all_thread, daemon=True)
@@ -236,8 +360,10 @@ class BrewBackend(GObject.Object):
         tap_thread.start()
 
     def _load_all_thread(self):
+        _log.debug('_load_all_thread started')
         # Get installed packages first
-        installed_f, installed_c = self._get_installed()
+        with log_timing('get installed packages', 'backend'):
+            installed_f, installed_c = self._get_installed()
         self._installed_formulae = installed_f
         self._installed_casks = installed_c
 
@@ -248,9 +374,11 @@ class BrewBackend(GObject.Object):
         # Load formulae from cache first
         data, is_stale = self._load_cached('formulae')
         if data:
-            self._formulae = [
-                Package(d, 'formula', self._installed_formulae) for d in data
-            ]
+            with log_timing('parse formulae from cache', 'backend'):
+                self._formulae = [
+                    Package(d, 'formula', self._installed_formulae) for d in data
+                ]
+            _log.info('Loaded %d formulae from cache (stale=%s)', len(self._formulae), is_stale)
             GLib.idle_add(self.emit, 'formulae-loaded', self._formulae)
 
         # Fetch in background if missing or stale
@@ -258,9 +386,11 @@ class BrewBackend(GObject.Object):
             new_data = self._fetch_json(FORMULA_API)
             if new_data:
                 self._save_cache('formulae', new_data)
-                self._formulae = [
-                    Package(d, 'formula', self._installed_formulae) for d in new_data
-                ]
+                with log_timing('parse formulae from API', 'backend'):
+                    self._formulae = [
+                        Package(d, 'formula', self._installed_formulae) for d in new_data
+                    ]
+                _log.info('Loaded %d formulae from API', len(self._formulae))
                 GLib.idle_add(self.emit, 'formulae-loaded', self._formulae)
 
         # Load casks from cache first
@@ -305,6 +435,7 @@ class BrewBackend(GObject.Object):
                 GLib.idle_add(self.emit, 'casks-loaded', self._casks)
 
         GLib.idle_add(self._set_loading_false)
+        _log.debug('_load_all_thread finished')
 
 
     def _load_tap_packages(self):
@@ -327,8 +458,10 @@ class BrewBackend(GObject.Object):
                 break
 
         if not taps_dir:
+            _log.debug('No taps directory found')
             return
 
+        _log.debug('Scanning taps directory: %s', taps_dir)
         tap_list = []
         try:
             for user in os.listdir(taps_dir):
@@ -340,7 +473,7 @@ class BrewBackend(GObject.Object):
                     tap_name = f'{user}/{repo[9:]}'
                     tap_list.append({'name': tap_name, 'path': repo_dir})
         except Exception as e:
-            print(f'Pasar: Failed to list taps directory: {e}')
+            _log.error('Failed to list taps directory: %s', e)
             return
 
         import sys
@@ -410,10 +543,12 @@ class BrewBackend(GObject.Object):
 
         if formulae_changed:
             self._formulae = new_formulae
+            _log.info('Tap scan added %d formulae', len(new_formulae) - len(existing_formula_names) + (len(new_formulae) - len(self._formulae) if False else 0))
             GLib.idle_add(self.emit, 'formulae-loaded', self._formulae)
 
         if casks_changed:
             self._casks = new_casks
+            _log.info('Tap scan added casks, total now %d', len(new_casks))
             GLib.idle_add(self.emit, 'casks-loaded', self._casks)
 
     def _minimal_formula_data_from_rb(self, rb_path, tap_name, pkg_name):
@@ -503,6 +638,7 @@ class BrewBackend(GObject.Object):
         if not query:
             return []
 
+        _log.debug('search: query=%r  type=%s', query, pkg_type)
         results = []
         if pkg_type in (None, 'formula'):
             for pkg in self._formulae:
@@ -569,6 +705,7 @@ class BrewBackend(GObject.Object):
             args.append('--cask')
         args.append(package.name)
         cmd = _brew_cmd(args)
+        _log.info('_run_brew_operation: %s', ' '.join(cmd))
 
         try:
             process = subprocess.Popen(
@@ -585,6 +722,8 @@ class BrewBackend(GObject.Object):
 
             process.wait()
             success = process.returncode == 0
+            _log.info('brew %s %s  rc=%d  output_lines=%d',
+                      operation, package.name, process.returncode, len(output_lines))
 
             if success:
                 if operation == 'install':
@@ -606,6 +745,7 @@ class BrewBackend(GObject.Object):
                 GLib.idle_add(callback, success, msg)
 
         except Exception as e:
+            _log.exception('_run_brew_operation exception: %s %s', operation, package.name)
             GLib.idle_add(self.emit, 'operation-complete', False, str(e))
             if callback:
                 GLib.idle_add(callback, False, str(e))
@@ -620,6 +760,7 @@ class BrewBackend(GObject.Object):
         thread.start()
 
     def _get_package_info_thread(self, package, callback):
+        _log.debug('Fetching detail info for %s (%s)', package.name, package.pkg_type)
         if package.pkg_type == 'formula':
             url = FORMULA_DETAIL_API.format(package.name)
         else:
@@ -639,15 +780,17 @@ class BrewBackend(GObject.Object):
 
     def _fetch_icon_thread(self, package, callback):
         """Try multiple icon sources for a package."""
+        _log.debug('Fetching icon for %s', package.name)
         icon_path = os.path.join(self._cache_dir, f'icon_{package.name}.png')
 
         if os.path.exists(icon_path):
             try:
                 pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(icon_path, 64, 64, True)
+                _log.debug('Loaded cached icon for %s: %dx%d', package.name, pixbuf.get_width(), pixbuf.get_height())
                 GLib.idle_add(callback, package, pixbuf)
                 return
-            except Exception:
-                pass
+            except Exception as e:
+                _log.debug('Failed to load cached icon for %s: %s', package.name, e)
 
         icon_urls = []
 
@@ -662,30 +805,50 @@ class BrewBackend(GObject.Object):
         if readme_images:
             icon_urls.append(readme_images[0])
 
-        # 3. DuckDuckGo favicon service — reliable last resort
+        # 3. Google S2 favicon service — returns PNG at arbitrary sizes
+        if package.homepage:
+            domain = package.homepage.replace('https://', '').replace('http://', '').split('/')[0]
+            icon_urls.append(f'https://www.google.com/s2/favicons?domain={domain}&sz=128')
+
+        # 4. DuckDuckGo favicon service — returns ICO, so lower priority
         if package.homepage:
             domain = package.homepage.replace('https://', '').replace('http://', '').split('/')[0]
             icon_urls.append(f'https://icons.duckduckgo.com/ip3/{domain}.ico')
 
         for url in icon_urls:
             try:
-                req = Request(url, headers={'User-Agent': 'Pasar/0.1'})
+                req = Request(url, headers={'User-Agent': 'Mozilla/5.0 Pasar/0.1'})
                 with urlopen(req, timeout=10) as resp:
                     data = resp.read()
-                    if len(data) > 200:  # Filter out 1x1 pixel / blank responses
+                    if len(data) < 200:  # Filter out 1x1 pixel / blank responses
+                        continue
+
+                    # ICO files need conversion — GdkPixbuf may not support them
+                    if (url.lower().endswith('.ico')
+                            or resp.headers.get('Content-Type', '').startswith('image/x-icon')
+                            or resp.headers.get('Content-Type', '').startswith('image/vnd.microsoft.icon')):
+                        converted = _ico_to_png(data)
+                        if converted:
+                            data = converted
+                        else:
+                            continue  # Unusable ICO — skip to next source
+
+                    loader = GdkPixbuf.PixbufLoader()
+                    loader.write(data)
+                    loader.close()
+                    pixbuf = loader.get_pixbuf()
+                    if pixbuf:
+                        pixbuf = pixbuf.scale_simple(64, 64, GdkPixbuf.InterpType.BILINEAR)
                         with open(icon_path, 'wb') as f:
                             f.write(data)
-                        loader = GdkPixbuf.PixbufLoader()
-                        loader.write(data)
-                        loader.close()
-                        pixbuf = loader.get_pixbuf()
-                        if pixbuf:
-                            pixbuf = pixbuf.scale_simple(64, 64, GdkPixbuf.InterpType.BILINEAR)
-                            GLib.idle_add(callback, package, pixbuf)
-                            return
-            except Exception:
+                        _log.debug('Downloaded and loaded icon for %s from %s: %dx%d', package.name, url, pixbuf.get_width(), pixbuf.get_height())
+                        GLib.idle_add(callback, package, pixbuf)
+                        return
+            except Exception as e:
+                _log.debug('Icon source %s failed for %s: %s', url, package.name, e)
                 continue
 
+        _log.debug('No icon found for %s', package.name)
         GLib.idle_add(callback, package, None)
 
     def _find_favicon_url(self, homepage):
@@ -935,9 +1098,11 @@ class BrewBackend(GObject.Object):
                                              'actions/workflows', 'buymeacoffee',
                                              'ko-fi', 'opencollective')):
                 continue
-            # Skip SVG files — GdkPixbuf can't reliably load arbitrary SVGs
+            # Keep SVG if GdkPixbuf has SVG support; skip otherwise
             if low.endswith('.svg'):
-                continue
+                svg_ok = any(f.get_name() == 'svg' for f in GdkPixbuf.Pixbuf.get_formats())
+                if not svg_ok:
+                    continue
 
             absolute.append(url)
 

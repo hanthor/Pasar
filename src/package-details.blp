@@ -156,28 +156,117 @@ template $PasarPackageDetails: Adw.NavigationPage {
               Separator {}
 
               /* Metadata rows */
-              Adw.PreferencesGroup {
-                title: "Package Info";
+              Box {
+                orientation: vertical;
+                spacing: 8;
 
-                Adw.ActionRow version_row {
-                  title: "Version";
-                  activatable: false;
+                Label {
+                  label: "Package Info";
+                  xalign: 0.0;
+                  styles ["title-2"]
                 }
 
-                Adw.ActionRow license_row {
-                  title: "License";
-                  activatable: false;
-                  visible: false;
-                }
+                ListBox {
+                  selection-mode: none;
+                  styles ["boxed-list"]
 
-                Adw.ActionRow homepage_row {
-                  title: "Homepage";
-                  activatable: true;
-                }
+                  ListBoxRow version_row {
+                    activatable: false;
+                    
+                    Box {
+                      orientation: horizontal;
+                      spacing: 12;
+                      margin-start: 12;
+                      margin-end: 12;
+                      margin-top: 10;
+                      margin-bottom: 10;
 
-                Adw.ActionRow type_row {
-                  title: "Type";
-                  activatable: false;
+                      Label {
+                        label: "Version";
+                        xalign: 0.0;
+                        hexpand: true;
+                      }
+
+                      Label version_label {
+                        xalign: 1.0;
+                        styles ["dim-label"]
+                      }
+                    }
+                  }
+
+                  ListBoxRow license_row {
+                    activatable: false;
+                    visible: false;
+                    
+                    Box {
+                      orientation: horizontal;
+                      spacing: 12;
+                      margin-start: 12;
+                      margin-end: 12;
+                      margin-top: 10;
+                      margin-bottom: 10;
+
+                      Label {
+                        label: "License";
+                        xalign: 0.0;
+                        hexpand: true;
+                      }
+
+                      Label license_label {
+                        xalign: 1.0;
+                        styles ["dim-label"]
+                      }
+                    }
+                  }
+
+                  ListBoxRow homepage_row {
+                    activatable: true;
+                    
+                    Box {
+                      orientation: vertical;
+                      spacing: 4;
+                      margin-start: 12;
+                      margin-end: 12;
+                      margin-top: 10;
+                      margin-bottom: 10;
+
+                      Label {
+                        label: "Homepage";
+                        xalign: 0.0;
+                      }
+
+                      Label homepage_label {
+                        xalign: 0.0;
+                        wrap: true;
+                        selectable: true;
+                        styles ["dim-label", "caption"]
+                      }
+                    }
+                  }
+
+                  ListBoxRow type_row {
+                    activatable: false;
+                    
+                    Box {
+                      orientation: horizontal;
+                      spacing: 12;
+                      margin-start: 12;
+                      margin-end: 12;
+                      margin-top: 10;
+                      margin-bottom: 10;
+
+                      Label {
+                        label: "Type";
+                        xalign: 0.0;
+                        hexpand: true;
+                      }
+
+                      Label type_label {
+                        xalign: 1.0;
+                        styles ["dim-label"]
+                      }
+                    }
+                  }
                 }
               }
 

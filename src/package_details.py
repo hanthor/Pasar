@@ -8,6 +8,9 @@ gi.require_version('Adw', '1')
 from gi.repository import Adw, Gtk, Gio, GObject, Pango
 from .backend import Package, BrewBackend
 from .task_manager import Task, TaskStatus, TaskOperation
+from .logging_util import get_logger
+
+_log = get_logger('package_details')
 
 
 @Gtk.Template(resource_path='/dev/jamesq/Pasar/package-details.ui')
@@ -27,9 +30,13 @@ class PasarPackageDetails(Adw.NavigationPage):
     install_button = Gtk.Template.Child()
     remove_button = Gtk.Template.Child()
     version_row = Gtk.Template.Child()
+    version_label = Gtk.Template.Child()
     license_row = Gtk.Template.Child()
+    license_label = Gtk.Template.Child()
     homepage_row = Gtk.Template.Child()
+    homepage_label = Gtk.Template.Child()
     type_row = Gtk.Template.Child()
+    type_label = Gtk.Template.Child()
     error_label = Gtk.Template.Child()
     detail_progress_bar = Gtk.Template.Child()
     screenshot_bin = Gtk.Template.Child()
@@ -46,15 +53,20 @@ class PasarPackageDetails(Adw.NavigationPage):
 
         self.install_button.connect('clicked', self._on_install_clicked)
         self.remove_button.connect('clicked', self._on_remove_clicked)
-        self.homepage_row.connect('activated', self._on_homepage_activated)
+        self.homepage_row.connect('activate', self._on_homepage_activated)
 
         if package:
+            _log.debug('Opening details for %s (%s)', package.name, package.pkg_type)
             self._populate(package)
 
     def _populate(self, package):
+        from .logging_util import get_logger
+        _log = get_logger('package_details')
+        
         self.set_title(package.display_name or package.name)
         self.detail_name.set_label(package.name)
         self.detail_desc.set_label(package.description or 'No description available.')
+        _log.debug('Setting description: %s', package.description[:50] if package.description else 'None')
 
         if package.display_name and package.display_name != package.name:
             self.detail_display_name.set_label(package.display_name)
@@ -64,21 +76,27 @@ class PasarPackageDetails(Adw.NavigationPage):
         if package.pkg_type == 'cask':
             self.detail_type_badge.add_css_class('cask-badge')
 
-        self.version_row.set_subtitle(package.version or 'Unknown')
-        self.type_row.set_subtitle(
+        _log.debug('Setting version_label: %s', package.version or 'Unknown')
+        self.version_label.set_label(package.version or 'Unknown')
+        self.type_label.set_label(
             'Cask (GUI App / Binary)' if package.pkg_type == 'cask'
             else 'Formula (CLI / Library)'
         )
 
         if package.license_:
-            self.license_row.set_subtitle(package.license_)
+            _log.debug('Setting license: %s', package.license_)
+            self.license_label.set_label(package.license_)
             self.license_row.set_visible(True)
+        else:
+            _log.debug('No license for %s', package.name)
 
         if package.homepage:
-            self.homepage_row.set_subtitle(package.homepage)
+            _log.debug('Setting homepage: %s', package.homepage)
+            self.homepage_label.set_label(package.homepage)
         else:
             self.homepage_row.set_sensitive(False)
-            self.homepage_row.set_subtitle('Not available')
+            self.homepage_label.set_label('Not available')
+            _log.debug('No homepage for %s', package.name)
 
         self._update_buttons()
         self.details_stack.set_visible_child_name('content')
@@ -112,7 +130,7 @@ class PasarPackageDetails(Adw.NavigationPage):
             try:
                 from gi.repository import Gdk
                 texture = Gdk.Texture.new_for_pixbuf(pixbuf)
-                self.detail_icon.set_paintable(texture)
+                self.detail_icon.set_from_paintable(texture)
             except Exception:
                 pass
 
@@ -133,7 +151,7 @@ class PasarPackageDetails(Adw.NavigationPage):
             self._render_readme(text)
             self.readme_bin.set_visible(True)
         except Exception as e:
-            print(f'Pasar: README render error: {e}')
+            _log.warning('README render error for %s: %s', package.name, e)
 
     def _render_readme(self, text):
         """Render Markdown text into the readme_view TextBuffer using TextTags."""
@@ -319,6 +337,7 @@ class PasarPackageDetails(Adw.NavigationPage):
         self.detail_progress_bar.set_fraction(task.progress)
 
     def _on_task_finished(self, task, success):
+        _log.info('Detail task finished: %s  success=%s', task.title, success)
         self._task = None
         self.detail_progress_bar.set_fraction(1.0 if success else 0.0)
         self.detail_progress_bar.set_visible(False)
@@ -334,12 +353,14 @@ class PasarPackageDetails(Adw.NavigationPage):
     def _on_install_clicked(self, button):
         if not self._task_manager:
             return
+        _log.info('Install clicked: %s', self._package.name)
         task = self._task_manager.install(self._package)
         self._bind_task(task)
 
     def _on_remove_clicked(self, button):
         if not self._task_manager:
             return
+        _log.info('Remove clicked: %s', self._package.name)
         task = self._task_manager.remove(self._package)
         self._bind_task(task)
 

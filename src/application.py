@@ -8,6 +8,9 @@ gi.require_version('Adw', '1')
 
 from gi.repository import Adw, Gio, GLib, Gtk
 from .window import PasarWindow
+from .logging_util import get_logger
+
+_log = get_logger('application')
 
 
 class PasarApplication(Adw.Application):
@@ -16,17 +19,64 @@ class PasarApplication(Adw.Application):
     def __init__(self, version='0.1.0', **kwargs):
         super().__init__(
             application_id='dev.jamesq.Pasar',
-            flags=Gio.ApplicationFlags.HANDLES_OPEN | Gio.ApplicationFlags.DEFAULT_FLAGS,
+            flags=Gio.ApplicationFlags.HANDLES_OPEN | Gio.ApplicationFlags.HANDLES_COMMAND_LINE | Gio.ApplicationFlags.DEFAULT_FLAGS,
             **kwargs,
         )
         self.version = version
+        self._package_to_open = None
+        
+        # Add command-line options
+        self.add_main_option(
+            'package',
+            ord('p'),
+            GLib.OptionFlags.NONE,
+            GLib.OptionArg.STRING,
+            'Open a specific package by name',
+            'PACKAGE',
+        )
         self.create_action('quit', lambda *_: self.quit(), ['<primary>q'])
         self.create_action('about', self._on_about_action)
+        _log.debug('PasarApplication created  version=%s', version)
+
+    def do_command_line(self, command_line):
+        """Handle command-line arguments."""
+        args = command_line.get_arguments()[1:]  # Skip argv[0]
+        package_name = None
+
+        index = 0
+        while index < len(args):
+            arg = args[index]
+            if arg in ('--package', '-p') and index + 1 < len(args):
+                package_name = args[index + 1]
+                index += 2
+                continue
+            if arg.startswith('--package='):
+                package_name = arg.split('=', 1)[1]
+                index += 1
+                continue
+            if not arg.startswith('-') and package_name is None:
+                package_name = arg
+            index += 1
+
+        if package_name:
+            _log.info('Opening package from command-line: %s', package_name)
+            self._package_to_open = package_name
+
+        self.activate()
+        return 0
+
 
     def do_activate(self):
+        _log.info('do_activate called')
         win = self.props.active_window
         if not win:
-            win = PasarWindow(application=self)
+            _log.debug('Creating new PasarWindow')
+            win = PasarWindow(application=self, package_to_open=self._package_to_open)
+            self._package_to_open = None
+        elif self._package_to_open:
+            # Window exists, just open the package
+            win.open_package_by_name(self._package_to_open)
+            self._package_to_open = None
 
         # Load CSS
         css_provider = Gtk.CssProvider()
@@ -40,11 +90,13 @@ class PasarApplication(Adw.Application):
         win.present()
 
     def do_open(self, files, n_files, hint):
+        _log.info('do_open called  n_files=%d  hint=%r', n_files, hint)
         self.do_activate()
         win = self.props.active_window
         for gfile in files:
             path = gfile.get_path()
             if path and path.endswith('.Brewfile'):
+                _log.info('Opening Brewfile: %s', path)
                 from .brewfile_dialog import PasarBrewfileDialog
                 dialog = PasarBrewfileDialog(window=win)
                 dialog.load_brewfile(path)
