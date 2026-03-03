@@ -800,16 +800,43 @@ class BrewBackend(GObject.Object):
     def get_package_info(self, name, pkg_type='formula'):
         """Get package info synchronously (for brewfile loading)."""
         try:
+            # First try the API
             if pkg_type == 'formula':
                 url = FORMULA_DETAIL_API.format(name)
             else:
                 url = CASK_DETAIL_API.format(name)
             
             data = self._fetch_json(url)
-            return data
+            if data:
+                return data
         except Exception as e:
-            _log.warning('Failed to fetch info for %s: %s', name, e)
-            return None
+            _log.debug('API fetch failed for %s, trying brew command: %s', name, e)
+        
+        # Fallback to brew info command (for custom taps)
+        try:
+            _log.info('Using brew info for %s', name)
+            cmd_type = '--formula' if pkg_type == 'formula' else '--cask'
+            result = subprocess.run(
+                _brew_cmd(['info', '--json=v2', cmd_type, name]),
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            if result.returncode == 0:
+                data = json.loads(result.stdout)
+                # Extract the package from the json response
+                key = 'formulae' if pkg_type == 'formula' else 'casks'
+                if key in data and len(data[key]) > 0:
+                    pkg_data = data[key][0]
+                    _log.debug('Got package info from brew command: %s', pkg_data.get('name'))
+                    return pkg_data
+            else:
+                _log.warning('brew info failed for %s: %s', name, result.stderr)
+        except Exception as e:
+            _log.error('brew info command failed for %s: %s', name, e)
+        
+        return None
 
     def _get_package_info_thread(self, package, callback):
         _log.debug('Fetching detail info for %s (%s)', package.name, package.pkg_type)

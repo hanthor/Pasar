@@ -55,10 +55,75 @@ class PasarBrewfilePage(Adw.Bin):
         # Tap any taps that aren't already tapped
         self._process_taps()
         
-        # Small delay to let taps process, then load packages
-        GLib.timeout_add(500, self._load_packages)
+        # Load packages in a thread to avoid blocking UI
+        import threading
+        thread = threading.Thread(target=self._load_packages_thread, daemon=True)
+        thread.start()
 
-    def _process_taps(self):
+    def _load_packages_thread(self):
+        """Load packages in a background thread."""
+        import time
+        # Small delay to let taps process
+        time.sleep(0.5)
+        
+        if not self.parsed_data:
+            _log.warning('No parsed data available')
+            return
+        
+        _log.info('Loading packages: %d formulae, %d casks', 
+                 len(self.parsed_data.get('formulae', [])),
+                 len(self.parsed_data.get('casks', [])))
+        
+        # Load formulae
+        formulae_tiles = []
+        if self.parsed_data.get('formulae'):
+            for formula_name in self.parsed_data['formulae']:
+                _log.debug('Loading formula: %s', formula_name)
+                pkg = self._get_or_fetch_package(formula_name, 'formula')
+                if pkg:
+                    self._packages.append(pkg)
+                    formulae_tiles.append(pkg)
+                else:
+                    _log.warning('Failed to load formula: %s', formula_name)
+        
+        # Load casks
+        casks_tiles = []
+        if self.parsed_data.get('casks'):
+            for cask_name in self.parsed_data['casks']:
+                _log.debug('Loading cask: %s', cask_name)
+                pkg = self._get_or_fetch_package(cask_name, 'cask')
+                if pkg:
+                    self._packages.append(pkg)
+                    casks_tiles.append(pkg)
+                else:
+                    _log.warning('Failed to load cask: %s', cask_name)
+        
+        # Update UI on main thread
+        GLib.idle_add(self._populate_tiles, formulae_tiles, casks_tiles)
+
+    def _populate_tiles(self, formulae, casks):
+        """Populate tiles on the main thread."""
+        if formulae:
+            self.formulae_section.set_visible(True)
+            for pkg in formulae:
+                tile = PasarPackageTile(package=pkg)
+                tile.connect('clicked', self._on_tile_clicked)
+                tile.connect('install-requested', self._on_tile_install_requested)
+                self._load_tile_icon(tile, pkg)
+                self.formulae_flow.append(tile)
+        
+        if casks:
+            self.casks_section.set_visible(True)
+            for pkg in casks:
+                tile = PasarPackageTile(package=pkg)
+                tile.connect('clicked', self._on_tile_clicked)
+                tile.connect('install-requested', self._on_tile_install_requested)
+                self._load_tile_icon(tile, pkg)
+                self.casks_flow.append(tile)
+        
+        _log.info('Finished populating %d packages', len(self._packages))
+        self.brewfile_stack.set_visible_child_name('content')
+        return False
         """Process taps from the Brewfile."""
         if not self.parsed_data or not self.parsed_data['taps']:
             return
@@ -112,40 +177,6 @@ class PasarBrewfilePage(Adw.Bin):
         thread = threading.Thread(target=run_tap, daemon=True)
         thread.start()
 
-    def _load_packages(self):
-        """Load and display packages from the Brewfile."""
-        if not self.parsed_data:
-            return False
-            
-        # Load formulae
-        if self.parsed_data['formulae']:
-            self.formulae_section.set_visible(True)
-            for formula_name in self.parsed_data['formulae']:
-                pkg = self._get_or_fetch_package(formula_name, 'formula')
-                if pkg:
-                    self._packages.append(pkg)
-                    tile = PasarPackageTile(package=pkg)
-                    tile.connect('clicked', self._on_tile_clicked)
-                    tile.connect('install-requested', self._on_tile_install_requested)
-                    self._load_tile_icon(tile, pkg)
-                    self.formulae_flow.append(tile)
-        
-        # Load casks
-        if self.parsed_data['casks']:
-            self.casks_section.set_visible(True)
-            for cask_name in self.parsed_data['casks']:
-                pkg = self._get_or_fetch_package(cask_name, 'cask')
-                if pkg:
-                    self._packages.append(pkg)
-                    tile = PasarPackageTile(package=pkg)
-                    tile.connect('clicked', self._on_tile_clicked)
-                    tile.connect('install-requested', self._on_tile_install_requested)
-                    self._load_tile_icon(tile, pkg)
-                    self.casks_flow.append(tile)
-        
-        self.brewfile_stack.set_visible_child_name('content')
-        return False  # Don't repeat timeout
-
     def _get_or_fetch_package(self, name, pkg_type):
         """Get package from backend or fetch info."""
         pkgs = self.backend.formulae if pkg_type == 'formula' else self.backend.casks
@@ -153,16 +184,24 @@ class PasarBrewfilePage(Adw.Bin):
         # Try to find in loaded packages
         for p in pkgs:
             if p.name == name or p.full_name == name:
+                _log.debug('Found %s in cache', name)
                 return p
         
         # Not found - fetch info for this specific package
-        _log.debug('Package %s not in cache, fetching info', name)
-        pkg_info = self.backend.get_package_info(name, pkg_type)
-        
-        if pkg_info:
-            return Package(data=pkg_info, pkg_type=pkg_type, installed_set=self.backend.installed)
+        _log.info('Package %s not in cache, fetching info', name)
+        try:
+            pkg_info = self.backend.get_package_info(name, pkg_type)
+            
+            if pkg_info:
+                _log.debug('Successfully fetched info for %s', name)
+                return Package(data=pkg_info, pkg_type=pkg_type, installed_set=self.backend.installed)
+            else:
+                _log.warning('No info returned for %s', name)
+        except Exception as e:
+            _log.error('Error fetching package info for %s: %s', name, e)
         
         # Create a minimal placeholder
+        _log.info('Creating placeholder for %s', name)
         return Package(data={'name': name, 'desc': 'Package from Brewfile'}, 
                       pkg_type=pkg_type, installed_set=self.backend.installed)
 

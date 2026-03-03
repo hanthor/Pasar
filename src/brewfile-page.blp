@@ -2,29 +2,10 @@ using Gtk 4.0;
 using Adw 1;
 
 template $PasarBrewfilePage: Adw.Bin {
-  child: Adw.ToolbarView {
-    [top]
-    Adw.HeaderBar {
-      show-title: false;
+  child: Box {
+    orientation: vertical;
 
-      [end]
-      Button install_all_button {
-        label: "Install All";
-        tooltip-text: "Install all packages from this Brewfile";
-
-        styles ["pill", "suggested-action"]
-      }
-
-      [end]
-      Button remove_all_button {
-        label: "Remove All";
-        tooltip-text: "Remove all packages from this Brewfile";
-
-        styles ["pill", "destructive-action"]
-      }
-    }
-
-    content: Stack brewfile_stack {
+    Stack brewfile_stack {
       transition-type: crossfade;
 
       StackPage {
@@ -140,6 +121,28 @@ template $PasarBrewfilePage: Adw.Bin {
           };
         };
       }
-    };
+    }
+
+    Separator {}
+
+    ActionBar {
+      revealed: true;
+
+      [start]
+      Button remove_all_button {
+        label: "Remove All";
+        tooltip-text: "Remove all installed packages from this Brewfile";
+
+        styles ["destructive-action"]
+      }
+
+      [end]
+      Button install_all_button {
+        label: "Install All";
+        tooltip-text: "Install all packages from this Brewfile";
+
+        styles ["suggested-action"]
+      }
+    }
   };
 }
