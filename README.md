@@ -67,7 +67,7 @@ unzip pasar.flatpak.zip
 flatpak install --user pasar.flatpak
 ```
 
-Or just grab the zip directly: [pasar.flatpak.zip](https://nightly.link/hanthor/Pasar/workflows/flatpak/main/pasar.flatpak.zip)
+Or just grab the zip directly: [pasar.flatpak.zip](https://nightly.link/hanthor/Pasar/workflows/flatpak/main/pasar-x86_64.flatpak.zip)
 
 ### Build from source
 
