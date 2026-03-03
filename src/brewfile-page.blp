@@ -6,6 +6,7 @@ template $PasarBrewfilePage: Adw.Bin {
     orientation: vertical;
 
     Stack brewfile_stack {
+      vexpand: true;
       transition-type: crossfade;
 
       StackPage {
@@ -17,7 +18,7 @@ template $PasarBrewfilePage: Adw.Bin {
           halign: center;
           spacing: 12;
 
-          Adw.Spinner {
+          Spinner {
             width-request: 32;
             height-request: 32;
           }

@@ -39,7 +39,7 @@ class PasarApplication(Adw.Application):
             'brewfile',
             ord('b'),
             GLib.OptionFlags.NONE,
-            GLib.OptionArg.FILENAME,
+            GLib.OptionArg.STRING,
             'Open a Brewfile',
             'FILE',
         )

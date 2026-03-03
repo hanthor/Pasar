@@ -308,10 +308,8 @@ class PasarWindow(Adw.ApplicationWindow):
         
         # Create brewfile page
         from .brewfile_page import PasarBrewfilePage
-        brewfile_page = PasarBrewfilePage(
-            backend=self.backend,
-            task_manager=self.task_manager
-        )
+        brewfile_page = PasarBrewfilePage()
+        brewfile_page.set_backend_and_manager(self.backend, self.task_manager)
         
         # Connect signals
         brewfile_page.connect('package-activated', self._on_package_activated)
