@@ -49,6 +49,7 @@ class PasarPackageTile(Gtk.Box):
         elif package.pkg_type == 'flatpak':
             self.type_badge.set_label('flatpak')
             self.type_badge.remove_css_class('cask-badge')
+            self.type_badge.add_css_class('flatpak-badge')
         else:
             self.type_badge.set_label('formula')
             self.type_badge.remove_css_class('cask-badge')

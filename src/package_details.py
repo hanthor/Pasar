@@ -65,6 +65,10 @@ class PasarPackageDetails(Adw.NavigationPage):
         self.read_more_button.connect('clicked', self._on_read_more_clicked)
         self.debug_render_button.connect('clicked', self._on_debug_render_clicked)
 
+        ctrl = Gtk.EventControllerScroll.new(Gtk.EventControllerScrollFlags.VERTICAL)
+        ctrl.connect('scroll', self._on_readme_scroll)
+        self.readme_scrolled.add_controller(ctrl)
+
         # Set cursor for screenshot button
         self.screenshot_button.set_cursor(Gdk.Cursor.new_from_name('pointer', None))
 
@@ -361,17 +365,28 @@ class PasarPackageDetails(Adw.NavigationPage):
             # If still 0, maybe the text hasn't rendered yet, try again soon
             GLib.timeout_add(100, self._check_readme_height)
 
+    def _on_readme_scroll(self, controller, dx, dy):
+        if self.read_more_button.get_label() == 'Read More':
+            return True # Consume default scrolling when collapsed
+        return False
+
     def _on_read_more_clicked(self, button):
         if self.read_more_button.get_label() == 'Read More':
             # Expand: set a very large height limit so it grows to show all text
             self.readme_scrolled.set_max_content_height(10000)
             self.read_more_button.set_label('Show Less')
             self.readme_card_box.add_css_class('expanded')
+            from gi.repository import Gtk
+            self.read_more_button.set_halign(Gtk.Align.FILL)
+            self.read_more_button.remove_css_class('pill')
         else:
             # Truncate: back to 300px
             self.readme_scrolled.set_max_content_height(300)
             self.read_more_button.set_label('Read More')
             self.readme_card_box.remove_css_class('expanded')
+            from gi.repository import Gtk
+            self.read_more_button.set_halign(Gtk.Align.CENTER)
+            self.read_more_button.add_css_class('pill')
             
         # Ensure the layout updates
         self.readme_scrolled.queue_resize()

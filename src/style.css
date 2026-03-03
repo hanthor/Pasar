@@ -74,6 +74,11 @@
   color: @accent_color;
 }
 
+.flatpak-badge {
+  background-color: alpha(#4e9a06, 0.15);
+  color: #4e9a06;
+}
+
 .cask-badge {
   background-color: alpha(#9141ac, 0.15);
   color: #9141ac;
@@ -269,11 +274,11 @@ button.updates-button:hover {
   padding: 12px;
 }
 
-textview.readme {
-  background-color: transparent;
-}
-
-textview.readme>text {
+textview.readme,
+textview.readme.view,
+textview.readme>text,
+textview.readme.view>text {
+  background: none;
   background-color: transparent;
 }
 
@@ -281,22 +286,32 @@ textview.readme>text {
   /* Truncation handled in Python/Blueprint via size-request and ScrolledWindow */
 }
 
+.readme-fade {
+  min-height: 80px;
+  background-image: linear-gradient(to bottom, alpha(@window_bg_color, 0), @window_bg_color 90%);
+  transition: opacity 300ms ease;
+}
+
+.readme-container.expanded .readme-fade {
+  opacity: 0;
+}
+
 .read-more-button {
-  background-color: alpha(@window_fg_color, 0.05);
   font-weight: bold;
-  border-radius: 12px;
-  margin-top: 12px;
+  margin-top: 4px;
+  margin-bottom: 8px;
   transition: all 200ms ease;
 }
 
-.read-more-button:hover {
-  background-color: alpha(@window_fg_color, 0.1);
-}
-
 .readme-container.expanded .read-more-button {
-  margin-top: 16px;
+  margin-top: 8px;
+  margin-bottom: 0px;
   background-color: transparent;
+  border-radius: 0 0 12px 12px;
   border: 1px solid alpha(@borders, 0.5);
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
 }
 
 .readme-container.expanded .read-more-button:hover {
