@@ -8,3 +8,4 @@ Type=Application
 Categories=System;PackageManager;
 Keywords=homebrew;brew;package;install;software;
 StartupNotify=true
+DBusActivatable=true

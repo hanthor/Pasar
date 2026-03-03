@@ -9,6 +9,7 @@ gi.require_version('Adw', '1')
 from gi.repository import Adw, Gio, GLib, Gtk
 from .window import PasarWindow
 from .logging_util import get_logger
+from .search_provider import PasarSearchProvider
 
 _log = get_logger('application')
 
@@ -36,6 +37,10 @@ class PasarApplication(Adw.Application):
         )
         self.create_action('quit', lambda *_: self.quit(), ['<primary>q'])
         self.create_action('about', self._on_about_action)
+        self.create_action('show-package', self._on_show_package_action)
+
+        self.search_provider = PasarSearchProvider(self)
+
         _log.debug('PasarApplication created  version=%s', version)
 
     def do_command_line(self, command_line):
@@ -117,8 +122,32 @@ class PasarApplication(Adw.Application):
         )
         about.present(self.props.active_window)
 
+    def _on_show_package_action(self, action, parameter):
+        if not parameter:
+            return
+            
+        package_name = parameter.get_string()
+        _log.info('show-package action triggered for: %s', package_name)
+        
+        self.do_activate()
+        win = self.props.active_window
+        if win:
+            win.open_package_by_name(package_name)
+
+
+    def do_dbus_register(self, connection, object_path):
+        """Register D-Bus objects when the application is registered on the bus."""
+        # Note: do NOT call super() here — PyGObject's signature is incompatible.
+        self.search_provider.export(connection)
+        return True
+
+    def do_dbus_unregister(self, connection, object_path):
+        """Unregister D-Bus objects."""
+        # Note: do NOT call super() here — same reason as above.
+        self.search_provider.unexport()
+
     def create_action(self, name, callback, shortcuts=None):
-        action = Gio.SimpleAction.new(name, None)
+        action = Gio.SimpleAction.new(name, GLib.VariantType.new('s') if name == 'show-package' else None)
         action.connect('activate', callback)
         self.add_action(action)
         if shortcuts:

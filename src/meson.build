@@ -56,7 +56,13 @@ pasar_sources = [
   'task_manager.py',
   'task_panel.py',
   'global_progress.py',
-  'brewfile_dialog.py'
+  'brewfile_dialog.py',
+  'search_provider.py'
 ]
 
 install_data(pasar_sources, install_dir: pkgdatadir / 'pasar')
+
+install_data(
+  'shell-search-provider-dbus-interfaces.xml',
+  install_dir: pkgdatadir
+)

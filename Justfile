@@ -5,7 +5,7 @@ REPO_DIR := ".flatpak-repo"
 STATE_DIR := ".flatpak-state"
 
 # Build the Flatpak and install it into the user Flatpak installation
-default: install
+default: dev
 
 # Build the Flatpak
 build:
@@ -24,6 +24,9 @@ install: build
 # Run the installed Flatpak
 run:
     flatpak run {{APP_ID}}
+
+run-direct:
+    ./run.sh
 
 # Build, install, and immediately run
 dev: install run

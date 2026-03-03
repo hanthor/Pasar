@@ -436,6 +436,8 @@ class BrewBackend(GObject.Object):
 
         GLib.idle_add(self._set_loading_false)
         _log.debug('_load_all_thread finished')
+        # build the search provider cache
+        self._build_search_provider_cache()
 
 
     def _load_tap_packages(self):
@@ -671,6 +673,42 @@ class BrewBackend(GObject.Object):
             if pkg.installed:
                 installed.append(pkg)
         return installed
+
+    def _build_search_provider_cache(self):
+        """Build a lightweight cache of Linux-compatible packages for the search provider."""
+        _log.info('Building search provider cache...')
+        sp_cache_path = os.path.join(self._cache_dir, 'linux_packages.json')
+        packages_data = []
+
+        import sys
+        is_linux = sys.platform.startswith('linux')
+
+        for pkg in self._formulae:
+            packages_data.append({
+                'name': pkg.name,
+                'display_name': pkg.display_name,
+                'description': pkg.description,
+                'pkg_type': pkg.pkg_type,
+            })
+
+        for pkg in self._casks:
+            # Assume casks already filtered in load if on linux, but double check
+            if is_linux:
+                # To be completely safe and decoupled, we assume they are already filtered in the self._casks list
+                pass
+            packages_data.append({
+                'name': pkg.name,
+                'display_name': pkg.display_name,
+                'description': pkg.description,
+                'pkg_type': pkg.pkg_type,
+            })
+
+        try:
+            with open(sp_cache_path, 'w', encoding='utf-8') as f:
+                json.dump(packages_data, f)
+            _log.info('Saved search provider cache to %s (%d packages)', sp_cache_path, len(packages_data))
+        except Exception as e:
+            _log.error('Failed to save search provider cache: %s', e)
 
     def install_async(self, package, callback=None):
         """Install a package asynchronously."""
