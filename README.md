@@ -62,7 +62,7 @@ Download and install the latest Flatpak bundle built from the `main` branch:
 
 ```bash
 # Download the latest CI build
-wget https://nightly.link/hanthor/Pasar/workflows/flatpak/main/pasar.flatpak.zip
+wget https://nightly.link/hanthor/Pasar/workflows/flatpak/main/pasar-x86_64.flatpak.zip
 unzip pasar.flatpak.zip
 flatpak install --user pasar.flatpak
 ```
