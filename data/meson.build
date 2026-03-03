@@ -21,6 +21,11 @@ install_data(
 )
 
 install_data(
+  'dev.jamesq.Pasar-mime.xml',
+  install_dir: get_option('datadir') / 'mime' / 'packages',
+)
+
+install_data(
   'icons/hicolor/scalable/apps/dev.jamesq.Pasar.svg',
   install_dir: get_option('datadir') / 'icons' / 'hicolor' / 'scalable' / 'apps',
 )
