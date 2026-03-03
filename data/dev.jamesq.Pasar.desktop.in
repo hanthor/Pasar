@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=Pasar
 Comment=Browse and install Homebrew packages
-Exec=pasar
+Exec=pasar %F
 Icon=dev.jamesq.Pasar
 Terminal=false
 Type=Application
@@ -9,3 +9,4 @@ Categories=System;PackageManager;
 Keywords=homebrew;brew;package;install;software;
 StartupNotify=true
 DBusActivatable=true
+MimeType=text/x-brewfile;application/x-brewfile;

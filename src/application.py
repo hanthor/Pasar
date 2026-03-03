@@ -9,7 +9,6 @@ gi.require_version('Adw', '1')
 from gi.repository import Adw, Gio, GLib, Gtk
 from .window import PasarWindow
 from .logging_util import get_logger
-from .search_provider import PasarSearchProvider
 
 _log = get_logger('application')
 
@@ -25,6 +24,7 @@ class PasarApplication(Adw.Application):
         )
         self.version = version
         self._package_to_open = None
+        self._brewfile_to_open = None
         
         # Add command-line options
         self.add_main_option(
@@ -35,18 +35,23 @@ class PasarApplication(Adw.Application):
             'Open a specific package by name',
             'PACKAGE',
         )
+        self.add_main_option(
+            'brewfile',
+            ord('b'),
+            GLib.OptionFlags.NONE,
+            GLib.OptionArg.STRING,
+            'Open a Brewfile',
+            'FILE',
+        )
         self.create_action('quit', lambda *_: self.quit(), ['<primary>q'])
         self.create_action('about', self._on_about_action)
-        self.create_action('show-package', self._on_show_package_action)
-
-        self.search_provider = PasarSearchProvider(self)
-
         _log.debug('PasarApplication created  version=%s', version)
 
     def do_command_line(self, command_line):
         """Handle command-line arguments."""
         args = command_line.get_arguments()[1:]  # Skip argv[0]
         package_name = None
+        brewfile_path = None
 
         index = 0
         while index < len(args):
@@ -59,6 +64,14 @@ class PasarApplication(Adw.Application):
                 package_name = arg.split('=', 1)[1]
                 index += 1
                 continue
+            if arg in ('--brewfile', '-b') and index + 1 < len(args):
+                brewfile_path = args[index + 1]
+                index += 2
+                continue
+            if arg.startswith('--brewfile='):
+                brewfile_path = arg.split('=', 1)[1]
+                index += 1
+                continue
             if not arg.startswith('-') and package_name is None:
                 package_name = arg
             index += 1
@@ -66,6 +79,10 @@ class PasarApplication(Adw.Application):
         if package_name:
             _log.info('Opening package from command-line: %s', package_name)
             self._package_to_open = package_name
+
+        if brewfile_path:
+            _log.info('Opening Brewfile from command-line: %s', brewfile_path)
+            self._brewfile_to_open = brewfile_path
 
         if '--gapplication-service' not in args:
             self.activate()
@@ -96,6 +113,11 @@ class PasarApplication(Adw.Application):
 
         win.present()
 
+        # Open brewfile if requested
+        if self._brewfile_to_open:
+            self._open_brewfile_dialog(win, self._brewfile_to_open)
+            self._brewfile_to_open = None
+
     def do_open(self, files, n_files, hint):
         _log.info('do_open called  n_files=%d  hint=%r', n_files, hint)
         self.do_activate()
@@ -104,10 +126,11 @@ class PasarApplication(Adw.Application):
             path = gfile.get_path()
             if path and path.endswith('.Brewfile'):
                 _log.info('Opening Brewfile: %s', path)
-                from .brewfile_dialog import PasarBrewfileDialog
-                dialog = PasarBrewfileDialog(window=win)
-                dialog.load_brewfile(path)
-                dialog.present()
+                win.open_brewfile(path)
+
+    def _open_brewfile_dialog(self, window, path):
+        """Open a Brewfile."""
+        window.open_brewfile(path)
 
     def _on_about_action(self, *args):
         about = Adw.AboutDialog(
@@ -124,32 +147,8 @@ class PasarApplication(Adw.Application):
         )
         about.present(self.props.active_window)
 
-    def _on_show_package_action(self, action, parameter):
-        if not parameter:
-            return
-            
-        package_name = parameter.get_string()
-        _log.info('show-package action triggered for: %s', package_name)
-        
-        self.do_activate()
-        win = self.props.active_window
-        if win:
-            win.open_package_by_name(package_name)
-
-
-    def do_dbus_register(self, connection, object_path):
-        """Register D-Bus objects when the application is registered on the bus."""
-        # Note: do NOT call super() here — PyGObject's signature is incompatible.
-        self.search_provider.export(connection)
-        return True
-
-    def do_dbus_unregister(self, connection, object_path):
-        """Unregister D-Bus objects."""
-        # Note: do NOT call super() here — same reason as above.
-        self.search_provider.unexport()
-
     def create_action(self, name, callback, shortcuts=None):
-        action = Gio.SimpleAction.new(name, GLib.VariantType.new('s') if name == 'show-package' else None)
+        action = Gio.SimpleAction.new(name, None)
         action.connect('activate', callback)
         self.add_action(action)
         if shortcuts:

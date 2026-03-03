@@ -18,6 +18,7 @@ from .browse_page import PasarBrowsePage      # noqa: F401
 from .search_page import PasarSearchPage      # noqa: F401
 from .installed_page import PasarInstalledPage  # noqa: F401
 from .global_progress import PasarGlobalProgress # noqa: F401
+from .brewfile_page import PasarBrewfilePage  # noqa: F401
 
 
 @Gtk.Template(resource_path='/dev/jamesq/Pasar/window.ui')
@@ -41,6 +42,7 @@ class PasarWindow(Adw.ApplicationWindow):
         self._package_to_open = package_to_open
         self._formulae_loaded = False
         self._casks_loaded = False
+        self._brewfile_page_count = 0  # Counter for unique brewfile tab names
 
         # Shared backend
         self.backend = BrewBackend()
@@ -74,6 +76,11 @@ class PasarWindow(Adw.ApplicationWindow):
         refresh_action = Gio.SimpleAction.new('refresh', None)
         refresh_action.connect('activate', self._on_refresh)
         self.add_action(refresh_action)
+
+        open_brewfile_action = Gio.SimpleAction.new('open-brewfile', None)
+        open_brewfile_action.connect('activate', self._on_open_brewfile)
+        self.add_action(open_brewfile_action)
+        self.get_application().set_accels_for_action('win.open-brewfile', ['<Ctrl>o'])
 
         # Settings for size persistence
         self._settings = Gio.Settings.new('dev.jamesq.Pasar')
@@ -235,6 +242,97 @@ class PasarWindow(Adw.ApplicationWindow):
         self.browse_page.set_loading()
         self.backend.load_all_async()
         self.toast_overlay.add_toast(Adw.Toast.new('Refreshing package list…'))
+
+    def _on_open_brewfile(self, action, param):
+        _log.info('Open Brewfile action triggered')
+        from gi.repository import Gtk
+        
+        # Create file filter for .Brewfile files
+        filter_brewfile = Gtk.FileFilter()
+        filter_brewfile.set_name('Brewfile')
+        filter_brewfile.add_pattern('*.Brewfile')
+        filter_brewfile.add_pattern('Brewfile')
+        
+        filter_all = Gtk.FileFilter()
+        filter_all.set_name('All files')
+        filter_all.add_pattern('*')
+        
+        filters = Gio.ListStore.new(Gtk.FileFilter)
+        filters.append(filter_brewfile)
+        filters.append(filter_all)
+        
+        # Create and configure file dialog
+        dialog = Gtk.FileDialog()
+        dialog.set_title('Open Brewfile')
+        dialog.set_filters(filters)
+        dialog.set_default_filter(filter_brewfile)
+        
+        # Suggest the ublue-os brewfile directory if it exists
+        import os
+        default_path = '/usr/share/ublue-os/homebrew'
+        if os.path.exists(default_path):
+            initial_folder = Gio.File.new_for_path(default_path)
+            dialog.set_initial_folder(initial_folder)
+        
+        # Open dialog and handle response
+        dialog.open(self, None, self._on_brewfile_selected)
+
+    def _on_brewfile_selected(self, dialog, result):
+        try:
+            file = dialog.open_finish(result)
+            if file:
+                path = file.get_path()
+                _log.info('User selected Brewfile: %s', path)
+                self.open_brewfile(path)
+        except Exception as e:
+            if 'dismissed' not in str(e).lower():
+                _log.error('Error opening Brewfile: %s', e)
+                self.toast_overlay.add_toast(Adw.Toast.new('Failed to open Brewfile'))
+
+    def open_brewfile(self, path):
+        """Open a Brewfile as a new tab in the main window."""
+        import os
+        
+        # Extract filename for tab title
+        filename = os.path.basename(path)
+        # Remove .Brewfile extension
+        if filename.endswith('.Brewfile'):
+            title = filename[:-9]  # Remove '.Brewfile'
+        elif filename == 'Brewfile':
+            title = 'Brewfile'
+        else:
+            title = filename
+        
+        # Capitalize first letter
+        title = title.capitalize()
+        
+        # Create brewfile page
+        from .brewfile_page import PasarBrewfilePage
+        brewfile_page = PasarBrewfilePage()
+        brewfile_page.set_backend_and_manager(self.backend, self.task_manager)
+        
+        # Connect signals
+        brewfile_page.connect('package-activated', self._on_package_activated)
+        brewfile_page.connect('install-requested', self._on_install_requested)
+        
+        # Add as a new tab with a unique name
+        self._brewfile_page_count += 1
+        page_name = f'brewfile_{self._brewfile_page_count}'
+        
+        # Add page to stack
+        stack_page = self.main_stack.add_titled(
+            brewfile_page,
+            page_name,
+            title
+        )
+        
+        # Switch to the new tab
+        self.main_stack.set_visible_child_name(page_name)
+        
+        # Load the brewfile
+        brewfile_page.load_brewfile(path)
+        
+        _log.info('Added Brewfile tab: %s', title)
 
     def _on_close(self, *args):
         w, h = self.get_default_size()
