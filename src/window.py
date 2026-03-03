@@ -78,6 +78,7 @@ class PasarWindow(Adw.ApplicationWindow):
         open_brewfile_action = Gio.SimpleAction.new('open-brewfile', None)
         open_brewfile_action.connect('activate', self._on_open_brewfile)
         self.add_action(open_brewfile_action)
+        self.get_application().set_accels_for_action('win.open-brewfile', ['<Ctrl>o'])
 
         # Settings for size persistence
         self._settings = Gio.Settings.new('dev.jamesq.Pasar')
