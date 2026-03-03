@@ -126,14 +126,11 @@ class PasarApplication(Adw.Application):
             path = gfile.get_path()
             if path and path.endswith('.Brewfile'):
                 _log.info('Opening Brewfile: %s', path)
-                self._open_brewfile_dialog(win, path)
+                win.open_brewfile(path)
 
     def _open_brewfile_dialog(self, window, path):
-        """Open a Brewfile in a dialog."""
-        from .brewfile_dialog import PasarBrewfileDialog
-        dialog = PasarBrewfileDialog(window=window)
-        dialog.load_brewfile(path)
-        dialog.present()
+        """Open a Brewfile."""
+        window.open_brewfile(path)
 
     def _on_about_action(self, *args):
         about = Adw.AboutDialog(

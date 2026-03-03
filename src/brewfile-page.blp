@@ -1,0 +1,145 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $PasarBrewfilePage: Adw.Bin {
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      show-title: false;
+
+      [end]
+      Button install_all_button {
+        label: "Install All";
+        tooltip-text: "Install all packages from this Brewfile";
+
+        styles ["pill", "suggested-action"]
+      }
+
+      [end]
+      Button remove_all_button {
+        label: "Remove All";
+        tooltip-text: "Remove all packages from this Brewfile";
+
+        styles ["pill", "destructive-action"]
+      }
+    }
+
+    content: Stack brewfile_stack {
+      transition-type: crossfade;
+
+      StackPage {
+        name: "loading";
+
+        child: Box {
+          orientation: vertical;
+          valign: center;
+          halign: center;
+          spacing: 12;
+
+          Adw.Spinner {
+            width-request: 32;
+            height-request: 32;
+          }
+
+          Label {
+            label: "Loading Brewfile packages…";
+
+            styles ["dim-label"]
+          }
+        };
+      }
+
+      StackPage {
+        name: "content";
+
+        child: ScrolledWindow {
+          hscrollbar-policy: never;
+          vexpand: true;
+
+          child: Adw.Clamp {
+            maximum-size: 1200;
+            tightening-threshold: 1100;
+
+            child: Box content_box {
+              orientation: vertical;
+              spacing: 16;
+              margin-start: 20;
+              margin-end: 20;
+              margin-top: 12;
+              margin-bottom: 40;
+
+              /* Taps Section */
+              Box taps_section {
+                orientation: vertical;
+                spacing: 8;
+                visible: false;
+
+                Label {
+                  label: "Taps";
+                  xalign: 0.0;
+                  margin-start: 4;
+
+                  styles ["title-3"]
+                }
+
+                ListBox taps_list {
+                  selection-mode: none;
+
+                  styles ["boxed-list"]
+                }
+              }
+
+              /* Formulae Section */
+              Box formulae_section {
+                orientation: vertical;
+                spacing: 8;
+                visible: false;
+
+                Label {
+                  label: "Formulae";
+                  xalign: 0.0;
+                  margin-start: 4;
+
+                  styles ["title-2"]
+                }
+
+                FlowBox formulae_flow {
+                  selection-mode: none;
+                  homogeneous: true;
+                  column-spacing: 8;
+                  row-spacing: 8;
+                  min-children-per-line: 2;
+                  max-children-per-line: 4;
+                }
+              }
+
+              /* Casks Section */
+              Box casks_section {
+                orientation: vertical;
+                spacing: 8;
+                visible: false;
+
+                Label {
+                  label: "Casks";
+                  xalign: 0.0;
+                  margin-start: 4;
+
+                  styles ["title-2"]
+                }
+
+                FlowBox casks_flow {
+                  selection-mode: none;
+                  homogeneous: true;
+                  column-spacing: 8;
+                  row-spacing: 8;
+                  min-children-per-line: 2;
+                  max-children-per-line: 4;
+                }
+              }
+            };
+          };
+        };
+      }
+    };
+  };
+}

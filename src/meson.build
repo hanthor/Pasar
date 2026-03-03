@@ -11,6 +11,7 @@ blueprints = custom_target('blueprints',
     'installed-page.blp',
     'task-panel.blp',
     'brewfile-dialog.blp',
+    'brewfile-page.blp',
   ),
   output: '.',
   command: [
@@ -57,6 +58,7 @@ pasar_sources = [
   'task_panel.py',
   'global_progress.py',
   'brewfile_dialog.py',
+  'brewfile_page.py',
   'search_provider.py'
 ]
 

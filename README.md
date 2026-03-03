@@ -4,7 +4,7 @@ Pasar is a modern, fast, and beautiful Homebrew client for Linux, built with **P
 
 > [!IMPORTANT]
 > **⚠️ Attribution & Disclaimer**
-> Pasar is a **completely AI-generated** project and limited in it's use to just Homebrew. The UI design is a heavy "tribute" (read: shameless ripoff) of [Bazaar](https://github.com/kolunmi/bazaar), which is the best App Store for Linux. If you like this design, you should definitely check out the original project, made by humans and consider donating to the original author.
+> Pasar is a **completely AI-generated** project and limited in it's use to just Homebrew. The UI design is a heavy "tribute" (read: shameless ripoff) of [Bazaar](https://github.com/kolunmi/bazaar), which is the best App Store for Linux. If you like this design, you should definitely check out the original project, made by humans and consider supporting the fine folks that make it.
 
 ![Pasar Screenshot](https://raw.githubusercontent.com/jamesq/pasar/main/data/screenshots/main-window.png)
 

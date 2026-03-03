@@ -797,6 +797,20 @@ class BrewBackend(GObject.Object):
         )
         thread.start()
 
+    def get_package_info(self, name, pkg_type='formula'):
+        """Get package info synchronously (for brewfile loading)."""
+        try:
+            if pkg_type == 'formula':
+                url = FORMULA_DETAIL_API.format(name)
+            else:
+                url = CASK_DETAIL_API.format(name)
+            
+            data = self._fetch_json(url)
+            return data
+        except Exception as e:
+            _log.warning('Failed to fetch info for %s: %s', name, e)
+            return None
+
     def _get_package_info_thread(self, package, callback):
         _log.debug('Fetching detail info for %s (%s)', package.name, package.pkg_type)
         if package.pkg_type == 'formula':

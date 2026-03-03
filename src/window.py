@@ -18,6 +18,7 @@ from .browse_page import PasarBrowsePage      # noqa: F401
 from .search_page import PasarSearchPage      # noqa: F401
 from .installed_page import PasarInstalledPage  # noqa: F401
 from .global_progress import PasarGlobalProgress # noqa: F401
+from .brewfile_page import PasarBrewfilePage  # noqa: F401
 
 
 @Gtk.Template(resource_path='/dev/jamesq/Pasar/window.ui')
@@ -41,6 +42,7 @@ class PasarWindow(Adw.ApplicationWindow):
         self._package_to_open = package_to_open
         self._formulae_loaded = False
         self._casks_loaded = False
+        self._brewfile_page_count = 0  # Counter for unique brewfile tab names
 
         # Shared backend
         self.backend = BrewBackend()
@@ -281,15 +283,58 @@ class PasarWindow(Adw.ApplicationWindow):
             if file:
                 path = file.get_path()
                 _log.info('User selected Brewfile: %s', path)
-                
-                from .brewfile_dialog import PasarBrewfileDialog
-                brewfile_dialog = PasarBrewfileDialog(window=self)
-                brewfile_dialog.load_brewfile(path)
-                brewfile_dialog.present()
+                self.open_brewfile(path)
         except Exception as e:
             if 'dismissed' not in str(e).lower():
                 _log.error('Error opening Brewfile: %s', e)
                 self.toast_overlay.add_toast(Adw.Toast.new('Failed to open Brewfile'))
+
+    def open_brewfile(self, path):
+        """Open a Brewfile as a new tab in the main window."""
+        import os
+        
+        # Extract filename for tab title
+        filename = os.path.basename(path)
+        # Remove .Brewfile extension
+        if filename.endswith('.Brewfile'):
+            title = filename[:-9]  # Remove '.Brewfile'
+        elif filename == 'Brewfile':
+            title = 'Brewfile'
+        else:
+            title = filename
+        
+        # Capitalize first letter
+        title = title.capitalize()
+        
+        # Create brewfile page
+        from .brewfile_page import PasarBrewfilePage
+        brewfile_page = PasarBrewfilePage(
+            backend=self.backend,
+            task_manager=self.task_manager
+        )
+        
+        # Connect signals
+        brewfile_page.connect('package-activated', self._on_package_activated)
+        brewfile_page.connect('install-requested', self._on_install_requested)
+        
+        # Add as a new tab with a unique name
+        self._brewfile_page_count += 1
+        page_name = f'brewfile_{self._brewfile_page_count}'
+        
+        # Add page to stack
+        stack_page = self.main_stack.add_titled(
+            brewfile_page,
+            page_name,
+            title
+        )
+        
+        # Switch to the new tab
+        self.main_stack.set_visible_child_name(page_name)
+        
+        # Load the brewfile
+        brewfile_page.load_brewfile(path)
+        
+        _log.info('Added Brewfile tab: %s', title)
 
     def _on_close(self, *args):
         w, h = self.get_default_size()
