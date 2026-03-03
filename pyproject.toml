@@ -1,0 +1,13 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--tb=short",
+    "--benchmark-disable",   # benchmarks off by default; use --benchmark-enable
+]
+markers = [
+    "slow: marks tests that are slow (deselect with '-m \"not slow\"')",
+]

@@ -8,6 +8,9 @@ gi.require_version('Adw', '1')
 from gi.repository import Adw, Gtk, GObject
 from .backend import BrewBackend
 from .package_tile import PasarPackageTile
+from .logging_util import get_logger
+
+_log = get_logger('installed_page')
 
 
 @Gtk.Template(resource_path='/dev/jamesq/Pasar/installed-page.ui')
@@ -41,6 +44,7 @@ class PasarInstalledPage(Adw.Bin):
             return
 
         installed = self._backend.get_installed_packages()
+        _log.debug('Refreshing installed page: %d packages', len(installed))
 
         # Clear flow
         while child := self.installed_flow.get_first_child():

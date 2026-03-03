@@ -11,6 +11,7 @@ blueprints = custom_target('blueprints',
     'installed-page.blp',
     'task-panel.blp',
     'brewfile-dialog.blp',
+    'brewfile-page.blp',
   ),
   output: '.',
   command: [
@@ -44,6 +45,7 @@ pasar_sources = [
   '__init__.py',
   'main.py',
   'application.py',
+  'logging_util.py',
   'window.py',
   'backend.py',
   'package_tile.py',
@@ -55,7 +57,14 @@ pasar_sources = [
   'task_manager.py',
   'task_panel.py',
   'global_progress.py',
-  'brewfile_dialog.py'
+  'brewfile_dialog.py',
+  'brewfile_page.py',
+  'search_provider.py'
 ]
 
 install_data(pasar_sources, install_dir: pkgdatadir / 'pasar')
+
+install_data(
+  'shell-search-provider-dbus-interfaces.xml',
+  install_dir: pkgdatadir
+)

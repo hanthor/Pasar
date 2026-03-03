@@ -43,26 +43,48 @@ class PasarPackageTile(Gtk.Box):
         self._package = package
         self.name_label.set_label(package.display_name or package.name)
         self.desc_label.set_label(package.description or '')
-        self.type_badge.set_label('cask' if package.pkg_type == 'cask' else 'formula')
         if package.pkg_type == 'cask':
+            self.type_badge.set_label('cask')
             self.type_badge.add_css_class('cask-badge')
+        elif package.pkg_type == 'flatpak':
+            self.type_badge.set_label('flatpak')
+            self.type_badge.remove_css_class('cask-badge')
         else:
+            self.type_badge.set_label('formula')
             self.type_badge.remove_css_class('cask-badge')
             
         is_installed = package.installed
-        self.installed_row.set_visible(is_installed)
-        self.install_button.set_visible(not is_installed)
+        if package.pkg_type == 'flatpak':
+            self.installed_row.set_visible(False)
+            self.install_button.set_visible(False)
+        else:
+            self.installed_row.set_visible(is_installed)
+            self.install_button.set_visible(not is_installed)
         
-        # Connect to installed changes
+        # Connect to property changes for lazy loading updates
         package.connect('notify::installed', self._on_installed_changed)
+        package.connect('notify::display-name', self._on_display_name_changed)
+        package.connect('notify::description', self._on_description_changed)
 
     def get_package(self):
         return self._package
 
     def _on_installed_changed(self, pkg, pspec):
+        if self._package and self._package.pkg_type == 'flatpak':
+            self.installed_row.set_visible(False)
+            self.install_button.set_visible(False)
+            return
         is_installed = pkg.installed
         self.installed_row.set_visible(is_installed)
         self.install_button.set_visible(not is_installed)
+
+    def _on_display_name_changed(self, pkg, pspec):
+        """Update the name label when display_name property changes (lazy loading)."""
+        self.name_label.set_label(pkg.display_name or pkg.name)
+
+    def _on_description_changed(self, pkg, pspec):
+        """Update the description label when description property changes (lazy loading)."""
+        self.desc_label.set_label(pkg.description or '')
 
     def _on_install_clicked(self, button):
         self.emit('install-requested')
@@ -75,3 +97,29 @@ class PasarPackageTile(Gtk.Box):
         # If the user clicked the actual install button, that button's handler 
         # will run first.
         self.emit('clicked')
+
+    def set_icon_pixbuf(self, pixbuf):
+        """Update the tile icon from a GdkPixbuf (called from the main thread via GLib.idle_add)."""
+        if pixbuf is None:
+            return
+        
+        from .logging_util import get_logger
+        _log = get_logger('package_tile')
+        
+        if not hasattr(self, 'package_icon') or self.package_icon is None:
+            _log.warning('package_icon widget not initialized for %s', 
+                        self._package.name if self._package else 'unknown')
+            return
+        
+        try:
+            from gi.repository import Gdk
+            texture = Gdk.Texture.new_for_pixbuf(pixbuf)
+            self.package_icon.set_from_paintable(texture)
+            if self._package:
+                _log.debug('Set icon for %s: %dx%d', self._package.name, pixbuf.get_width(), pixbuf.get_height())
+        except Exception as e:
+            if self._package:
+                _log.warning('Failed to set icon for %s: %s', self._package.name, e)
+            else:
+                _log.warning('Failed to set icon: %s', e)
+

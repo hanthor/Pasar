@@ -6,8 +6,11 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Adw, Gio, GLib, Gtk
+from gi.repository import Adw, Gio, Gtk
 from .window import PasarWindow
+from .logging_util import get_logger
+
+_log = get_logger('application')
 
 
 class PasarApplication(Adw.Application):
@@ -16,19 +19,75 @@ class PasarApplication(Adw.Application):
     def __init__(self, version='0.1.0', **kwargs):
         super().__init__(
             application_id='dev.jamesq.Pasar',
-            flags=Gio.ApplicationFlags.HANDLES_OPEN | Gio.ApplicationFlags.DEFAULT_FLAGS,
+            flags=Gio.ApplicationFlags.HANDLES_OPEN | Gio.ApplicationFlags.HANDLES_COMMAND_LINE | Gio.ApplicationFlags.NON_UNIQUE,
             **kwargs,
         )
         self.version = version
+        self._package_to_open = None
+        self._brewfile_to_open = None
+        
         self.create_action('quit', lambda *_: self.quit(), ['<primary>q'])
         self.create_action('about', self._on_about_action)
+        _log.debug('PasarApplication created  version=%s', version)
+
+    def do_command_line(self, command_line):
+        """Handle command-line arguments."""
+        # Use sys.argv directly since GTK's option parsing might not handle custom args properly
+        import sys
+        _log.info('do_command_line called with sys.argv: %s', sys.argv)
+        
+        package_name = None
+        brewfile_path = None
+
+        for i, arg in enumerate(sys.argv[1:]):
+            if arg in ('--package', '-p') and i + 2 < len(sys.argv):
+                package_name = sys.argv[i + 2]
+                _log.info('Found --package argument: %s', package_name)
+            elif arg.startswith('--package='):
+                package_name = arg.split('=', 1)[1]
+                _log.info('Found --package= argument: %s', package_name)
+            elif arg in ('--brewfile', '-b') and i + 2 < len(sys.argv):
+                brewfile_path = sys.argv[i + 2]
+                _log.info('Found --brewfile argument: %s', brewfile_path)
+            elif arg.startswith('--brewfile='):
+                brewfile_path = arg.split('=', 1)[1]
+                _log.info('Found --brewfile= argument: %s', brewfile_path)
+
+        if package_name:
+            _log.info('Opening package from command-line: %s', package_name)
+            self._package_to_open = package_name
+
+        if brewfile_path:
+            _log.info('Opening Brewfile from command-line: %s', brewfile_path)
+            self._brewfile_to_open = brewfile_path
+
+        _log.info('Before activate: _brewfile_to_open=%s', self._brewfile_to_open)
+        self.activate()
+        return 0
+
 
     def do_activate(self):
+        import time
+        activate_start = time.perf_counter()
+        
+        _log.info('do_activate: called')
+        _log.info('do_activate: _brewfile_to_open=%s', self._brewfile_to_open)
+        
         win = self.props.active_window
         if not win:
-            win = PasarWindow(application=self)
+            window_start = time.perf_counter()
+            _log.debug('Creating new PasarWindow')
+            win = PasarWindow(application=self, package_to_open=self._package_to_open)
+            window_time = (time.perf_counter() - window_start) * 1000
+            _log.info('PasarWindow created: %.1f ms', window_time)
+            self._package_to_open = None
+        elif self._package_to_open:
+            # Window exists, just open the package
+            win.open_package_by_name(self._package_to_open)
+            self._package_to_open = None
 
         # Load CSS
+        css_start = time.perf_counter()
         css_provider = Gtk.CssProvider()
         css_provider.load_from_resource('/dev/jamesq/Pasar/style.css')
         Gtk.StyleContext.add_provider_for_display(
@@ -36,19 +95,35 @@ class PasarApplication(Adw.Application):
             css_provider,
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
         )
+        css_time = (time.perf_counter() - css_start) * 1000
+        _log.info('CSS loaded and applied: %.1f ms', css_time)
 
         win.present()
+        present_time = (time.perf_counter() - activate_start) * 1000
+        _log.info('Window presented: %.1f ms', present_time)
+
+        # Open brewfile if requested
+        if self._brewfile_to_open:
+            _log.info('do_activate: Opening brewfile: %s', self._brewfile_to_open)
+            self._open_brewfile_dialog(win, self._brewfile_to_open)
+            self._brewfile_to_open = None
+        
+        total_activate_time = (time.perf_counter() - activate_start) * 1000
+        _log.info('do_activate: completed in %.1f ms', total_activate_time)
 
     def do_open(self, files, n_files, hint):
+        _log.info('do_open called  n_files=%d  hint=%r', n_files, hint)
         self.do_activate()
         win = self.props.active_window
         for gfile in files:
             path = gfile.get_path()
             if path and path.endswith('.Brewfile'):
-                from .brewfile_dialog import PasarBrewfileDialog
-                dialog = PasarBrewfileDialog(window=win)
-                dialog.load_brewfile(path)
-                dialog.present()
+                _log.info('Opening Brewfile: %s', path)
+                win.open_brewfile(path)
+
+    def _open_brewfile_dialog(self, window, path):
+        """Open a Brewfile."""
+        window.open_brewfile(path)
 
     def _on_about_action(self, *args):
         about = Adw.AboutDialog(

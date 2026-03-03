@@ -87,6 +87,11 @@ template $PasarWindow: Adw.ApplicationWindow {
 menu primary_menu {
   section {
     item {
+      label: "_Open Brewfile…";
+      action: "win.open-brewfile";
+    }
+
+    item {
       label: "_Refresh";
       action: "win.refresh";
     }

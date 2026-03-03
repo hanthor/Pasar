@@ -8,6 +8,9 @@ gi.require_version('Adw', '1')
 from gi.repository import Adw, Gtk, GLib, GObject
 from .backend import BrewBackend
 from .package_tile import PasarPackageTile
+from .logging_util import get_logger
+
+_log = get_logger('search_page')
 
 
 @Gtk.Template(resource_path='/dev/jamesq/Pasar/search-page.ui')
@@ -71,10 +74,12 @@ class PasarSearchPage(Adw.Bin):
     def _do_search(self, query):
         if not self._backend:
             return
+        _log.debug('Searching: %r  filter=%s', query, self._current_filter)
         self.search_spinner.set_visible(True)
 
         pkg_type = self._current_filter
         results = self._backend.search(query, pkg_type)
+        _log.debug('Search returned %d results', len(results))
 
         # Clear old results
         while child := self.results_flow.get_first_child():

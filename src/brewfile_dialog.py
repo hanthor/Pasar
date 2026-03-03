@@ -7,6 +7,9 @@ gi.require_version('Adw', '1')
 
 from gi.repository import Adw, Gtk, GObject, Gio
 from .backend import Package
+from .logging_util import get_logger
+
+_log = get_logger('brewfile_dialog')
 
 
 @Gtk.Template(resource_path='/dev/jamesq/Pasar/brewfile-dialog.ui')
@@ -25,6 +28,7 @@ class PasarBrewfileDialog(Adw.Window):
         self._packages = []
 
     def load_brewfile(self, path):
+        _log.info('Loading Brewfile: %s', path)
         self.parsed_data = self.backend.parse_brewfile(path)
         self.set_title(f"Brewfile: {path.split('/')[-1]}")
         self._populate_list()
@@ -67,6 +71,7 @@ class PasarBrewfileDialog(Adw.Window):
 
     @Gtk.Template.Callback()
     def _on_install_all_clicked(self, *args):
+        _log.info('Install-all from Brewfile: %d packages', len(self._packages))
         for tap in self.parsed_data['taps']:
             # Using an arbitrary task for tap
             pass
@@ -78,6 +83,7 @@ class PasarBrewfileDialog(Adw.Window):
 
     @Gtk.Template.Callback()
     def _on_remove_all_clicked(self, *args):
+        _log.info('Remove-all from Brewfile: %d packages', len(self._packages))
         for pkg in self._packages:
             if pkg.installed:
                 self.task_manager.remove(pkg)

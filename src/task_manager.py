@@ -10,19 +10,24 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
 from gi.repository import GLib, GObject
+from .logging_util import get_logger, profile, log_timing
+
+_log = get_logger('task_manager')
 
 
 # ── Brew output → friendly phase mapping ─────────────────────────
 _PHASE_PATTERNS = [
     # (substring in brew output, user-visible label, progress fraction hint)
+    # N.B. Order matters — "Uninstalling" contains "Installing" as a substring,
+    # so more-specific patterns must come before less-specific ones.
     ('Downloading',           'Downloading…',       0.10),
     ('Already downloaded',    'Downloading…',       0.20),
     ('Fetching',              'Fetching…',          0.15),
+    ('Uninstalling',          'Removing…',          0.50),
     ('Installing',            'Installing…',        0.40),
     ('Pouring',               'Installing…',        0.55),
-    ('Linking',               'Finishing up…',      0.75),
     ('Unlinking',             'Removing links…',    0.60),
-    ('Uninstalling',          'Removing…',          0.50),
+    ('Linking',               'Finishing up…',      0.75),
     ('Removing',              'Removing…',          0.55),
     ('Purging',               'Removing…',          0.65),
     ('Moving',                'Finishing up…',      0.70),
@@ -152,11 +157,14 @@ class TaskManager(GObject.Object):
 
     def submit(self, package, operation):
         """Queue *operation* on *package*. Returns the new Task."""
+        _log.info('Submitting task: %s %s (%s)',
+                  operation, package.name, package.pkg_type)
         task = Task(package, operation)
         task.connect('notify', lambda *a: GLib.idle_add(self.emit, 'task-changed', task))
         self._tasks.append(task)
         with self._lock:
             self._queue.append(task)
+            _log.debug('Queue depth after submit: %d', len(self._queue))
         self._update_active_count()
         self.emit('task-added', task)
         self._maybe_start_next()
@@ -179,6 +187,7 @@ class TaskManager(GObject.Object):
                 return
             task = self._queue.pop(0)
             self._running = True
+        _log.debug('Starting worker thread for: %s', task.title)
         thread = threading.Thread(target=self._run_task, args=(task,), daemon=True)
         thread.start()
 
@@ -192,6 +201,7 @@ class TaskManager(GObject.Object):
             args.append('--cask')
         args.append(task.package.name)
         cmd = _brew_cmd(args)
+        _log.info('Running brew command: %s', ' '.join(cmd))
 
         try:
             process = subprocess.Popen(
@@ -201,6 +211,7 @@ class TaskManager(GObject.Object):
                 text=True,
             )
             task._process = process
+            _log.debug('Subprocess PID: %d', process.pid)
 
             for line in process.stdout:
                 line = line.rstrip('\n')
@@ -212,15 +223,19 @@ class TaskManager(GObject.Object):
 
             process.wait()
             success = process.returncode == 0
+            _log.info('Brew exited: %s  rc=%d  lines=%d',
+                      task.title, process.returncode, len(task._output_lines))
 
             if success:
                 self._update_package_state(task)
                 GLib.idle_add(task._set_completed)
             else:
                 detail = self._extract_error(task._output_lines)
+                _log.warning('Task failed: %s — %s', task.title, detail[:200])
                 GLib.idle_add(task._set_failed, detail)
 
         except Exception as e:
+            _log.exception('Exception running task %s', task.title)
             GLib.idle_add(task._set_failed, str(e))
 
         finally:

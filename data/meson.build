@@ -21,6 +21,11 @@ install_data(
 )
 
 install_data(
+  'dev.jamesq.Pasar-mime.xml',
+  install_dir: get_option('datadir') / 'mime' / 'packages',
+)
+
+install_data(
   'icons/hicolor/scalable/apps/dev.jamesq.Pasar.svg',
   install_dir: get_option('datadir') / 'icons' / 'hicolor' / 'scalable' / 'apps',
 )
@@ -28,4 +33,18 @@ install_data(
 install_data(
   'icons/hicolor/symbolic/apps/dev.jamesq.Pasar-symbolic.svg',
   install_dir: get_option('datadir') / 'icons' / 'hicolor' / 'symbolic' / 'apps',
+)
+install_data(
+  'dev.jamesq.Pasar.search-provider.ini.in',
+  rename: 'dev.jamesq.Pasar.search-provider.ini',
+  install_dir: get_option('datadir') / 'gnome-shell' / 'search-providers'
+)
+
+service_conf = configuration_data()
+service_conf.set('bindir', get_option('prefix') / get_option('bindir'))
+configure_file(
+  input: 'dev.jamesq.Pasar.service.in',
+  output: 'dev.jamesq.Pasar.service',
+  configuration: service_conf,
+  install_dir: get_option('datadir') / 'dbus-1' / 'services'
 )

@@ -12,7 +12,9 @@
         "--share=network",
         "--talk-name=org.freedesktop.Flatpak",
         "--filesystem=home",
-        "--env=HOMEBREW_NO_AUTO_UPDATE=1"
+        "--filesystem=/home/linuxbrew:ro",
+        "--env=HOMEBREW_NO_AUTO_UPDATE=1",
+        "--own-name=dev.jamesq.Pasar.SearchProvider"
     ],
     "cleanup": [
         "/include",
@@ -24,7 +26,9 @@
         {
             "name": "blueprint-compiler",
             "buildsystem": "meson",
-            "cleanup": ["*"],
+            "cleanup": [
+                "*"
+            ],
             "sources": [
                 {
                     "type": "git",

@@ -8,6 +8,9 @@ gi.require_version('Adw', '1')
 from gi.repository import Adw, Gtk, GObject
 from .backend import BrewBackend
 from .package_tile import PasarPackageTile
+from .logging_util import get_logger
+
+_log = get_logger('browse_page')
 
 
 # Well-known popular formulae to feature
@@ -50,13 +53,24 @@ class PasarBrowsePage(Adw.Bin):
         self.browse_stack.set_visible_child_name('loading')
 
     def populate_formulae(self, packages):
+        _log.debug('populate_formulae: %d packages', len(packages))
         self._fill_flow(self.popular_flow, packages, POPULAR_FORMULAE)
         self._fill_recent(packages)
         self._maybe_show_content()
 
     def populate_casks(self, packages):
+        _log.debug('populate_casks: %d packages', len(packages))
         self._fill_flow(self.casks_flow, packages, POPULAR_CASKS)
         self._maybe_show_content()
+
+    def _load_tile_icon(self, tile, package):
+        """Ask the backend to fetch an icon and push it into the tile when ready."""
+        if not self._backend:
+            return
+        def on_icon_fetched(pkg, pixbuf):
+            if pixbuf:
+                tile.set_icon_pixbuf(pixbuf)
+        self._backend.fetch_icon_async(package, on_icon_fetched)
 
     def _fill_flow(self, flowbox, packages, preferred_names):
         # Clear existing
@@ -82,18 +96,32 @@ class PasarBrowsePage(Adw.Bin):
             tile = PasarPackageTile(package=pkg)
             tile.connect('clicked', self._on_tile_clicked)
             tile.connect('install-requested', self._on_tile_install_requested)
+            self._load_tile_icon(tile, pkg)
             flowbox.append(tile)
 
     def _fill_recent(self, packages):
         while child := self.recent_flow.get_first_child():
             self.recent_flow.remove(child)
-        # Show last 12 packages in the list (API returns them in various orders,
-        # so "recent" here is a rough approximation)
-        for pkg in packages[-12:]:
+            
+        if not packages:
+            return
+            
+        import random
+        from datetime import date
+        
+        # Use today's date as a seed so the "Discover" list changes daily but stays consistent
+        rng = random.Random(date.today().toordinal())
+        
+        # Pick 12 random packages
+        selected = rng.sample(packages, min(12, len(packages)))
+        
+        for pkg in selected:
             tile = PasarPackageTile(package=pkg)
             tile.connect('clicked', self._on_tile_clicked)
             tile.connect('install-requested', self._on_tile_install_requested)
+            self._load_tile_icon(tile, pkg)
             self.recent_flow.append(tile)
+
 
     def _maybe_show_content(self):
         # Show content only when at least one section has tiles

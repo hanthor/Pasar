@@ -4,9 +4,9 @@ Pasar is a modern, fast, and beautiful Homebrew client for Linux, built with **P
 
 > [!IMPORTANT]
 > **⚠️ Attribution & Disclaimer**
-> Pasar is a **completely AI-generated** project and limited in it's use to just Homebrew. The UI design is a heavy "tribute" (read: shameless ripoff) of [Bazaar](https://github.com/kolunmi/bazaar), which is the best App Store for Linux. If you like this design, you should definitely check out the original project, made by humans and consider donating to the original author.
+> Pasar is a **completely AI-generated** project and limited in it's use to just Homebrew. The UI design is a heavy "tribute" (read: shameless ripoff) of [Bazaar](https://github.com/kolunmi/bazaar), which is the best App Store for Linux. If you like this design, you should definitely check out the original project, made by humans and consider supporting the fine folks that make it.
 
-![Pasar Screenshot](https://raw.githubusercontent.com/jamesq/pasar/main/data/screenshots/main-window.png)
+![Pasar Screenshot](https://raw.githubusercontent.com/hanthor/pasar/main/data/screenshots/main-window.png)
 
 ## ✨ Features
 
@@ -25,6 +25,11 @@ Pasar is a modern, fast, and beautiful Homebrew client for Linux, built with **P
 - [Homebrew](https://brew.sh) installed and in your PATH.
 - Python 3.10+
 - GTK 4 and Libadwaita development headers.
+
+```
+brew install gtk4 libadwaita meson ninja pygobject3 gettext desktop-file-utils blueprint-compiler
+
+```
 
 ### Installation (Development)
 
@@ -56,7 +61,20 @@ meson compile -C builddir run
 
 ## 📦 Flatpak
 
-Pasar can be built as a Flatpak:
+### Install latest build from CI
+
+Download and install the latest Flatpak bundle built from the `main` branch:
+
+```bash
+# Download the latest CI build
+wget https://nightly.link/hanthor/Pasar/workflows/flatpak/main/pasar-x86_64.flatpak.zip
+unzip pasar-x86_64.flatpak.zip
+flatpak install --user pasar.flatpak
+```
+
+Or just grab the zip directly: [pasar.flatpak.zip](https://nightly.link/hanthor/Pasar/workflows/flatpak/main/pasar-x86_64.flatpak.zip)
+
+### Build from source
 
 ```bash
 flatpak-builder --force-clean --user --install flatpak-build dev.jamesq.Pasar.json
