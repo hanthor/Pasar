@@ -7,6 +7,10 @@
   transition: all 150ms ease;
 }
 
+.package-tile label {
+  color: @window_fg_color;
+}
+
 .package-tile:hover {
   background-color: alpha(@window_fg_color, 0.05);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
@@ -148,4 +152,25 @@ button.medium-pill:hover {
 
 button.medium-pill:active {
   transform: scale(0.95);
+}
+
+/* ===== Tap pills ===== */
+.pill {
+  background-color: alpha(@accent_bg_color, 0.15);
+  color: @accent_fg_color;
+  border-radius: 999px;
+  padding: 6px 12px;
+  border: 1px solid alpha(@accent_bg_color, 0.3);
+}
+
+.pill.success {
+  background-color: alpha(@success_color, 0.15);
+  color: @success_color;
+  border-color: alpha(@success_color, 0.3);
+}
+
+.pill.error {
+  background-color: alpha(@error_color, 0.15);
+  color: @error_color;
+  border-color: alpha(@error_color, 0.3);
 }

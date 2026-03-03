@@ -24,6 +24,7 @@ FORMULA_API = 'https://formulae.brew.sh/api/formula.json'
 CASK_API = 'https://formulae.brew.sh/api/cask.json'
 FORMULA_DETAIL_API = 'https://formulae.brew.sh/api/formula/{}.json'
 CASK_DETAIL_API = 'https://formulae.brew.sh/api/cask/{}.json'
+FLATHUB_APPSTREAM_API = 'https://flathub.org/api/v2/appstream/{}'
 
 
 def _is_flatpak():
@@ -175,7 +176,7 @@ class Package(GObject.Object):
     description = GObject.Property(type=str, default='')
     homepage = GObject.Property(type=str, default='')
     version = GObject.Property(type=str, default='')
-    pkg_type = GObject.Property(type=str, default='formula')  # 'formula' or 'cask'
+    pkg_type = GObject.Property(type=str, default='formula')  # 'formula', 'cask', or 'flatpak'
     installed = GObject.Property(type=bool, default=False)
     display_name = GObject.Property(type=str, default='')
     icon_url = GObject.Property(type=str, default='')
@@ -202,7 +203,7 @@ class Package(GObject.Object):
             urls = data.get('urls', {})
             stable = urls.get('stable', {}) if isinstance(urls, dict) else {}
             self.source_url = stable.get('url', '') or '' if isinstance(stable, dict) else ''
-        else:
+        elif pkg_type == 'cask':
             self.name = data.get('token', '')
             self.full_name = data.get('full_token', self.name)
             names = data.get('name', [])
@@ -212,6 +213,21 @@ class Package(GObject.Object):
             self.version = data.get('version', '') or ''
             # Cask download URL — often a github.com release asset
             self.source_url = data.get('url', '') or ''
+        else:
+            # Flatpak appstream object
+            app_id = data.get('id', '')
+            self.name = app_id
+            self.full_name = app_id
+            self.display_name = data.get('name', '') or app_id
+            self.description = data.get('summary', '') or ''
+            self.homepage = (data.get('urls', {}) or {}).get('homepage', '') if isinstance(data.get('urls', {}), dict) else ''
+            releases = data.get('releases', []) or []
+            if isinstance(releases, list) and releases:
+                self.version = (releases[0] or {}).get('version', '') or ''
+            else:
+                self.version = ''
+            self.source_url = self.homepage
+            self.icon_url = data.get('icon', '') or ''
 
         if installed_set:
             self.installed = self.name in installed_set or self.full_name in installed_set
@@ -245,27 +261,41 @@ class BrewBackend(GObject.Object):
 
     def parse_brewfile(self, path):
         import re
+        from .logging_util import log_timing
         taps = []
         formulae = []
         casks = []
-        try:
-            with open(path, 'r', encoding='utf-8') as f:
-                for line in f:
-                    line = line.strip()
-                    if line.startswith('tap '):
-                        m = re.match(r'tap\s+["\']([^"\']+)["\']', line)
-                        if m: taps.append(m.group(1))
-                    elif line.startswith('brew '):
-                        m = re.match(r'brew\s+["\']([^"\']+)["\']', line)
-                        if m: formulae.append(m.group(1))
-                    elif line.startswith('cask '):
-                        m = re.match(r'cask\s+["\']([^"\']+)["\']', line)
-                        if m: casks.append(m.group(1))
-        except Exception as e:
-            _log.error('Error parsing Brewfile: %s', e)
-        _log.info('Parsed Brewfile: %d taps, %d formulae, %d casks',
-                  len(taps), len(formulae), len(casks))
-        return {'taps': taps, 'formulae': formulae, 'casks': casks}
+        flatpaks = []
+        
+        with log_timing(f'parse_brewfile {path}', 'brewfile'):
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line.startswith('tap '):
+                            m = re.match(r'tap\s+["\']([^"\']+)["\']', line)
+                            if m: taps.append(m.group(1))
+                        elif line.startswith('brew '):
+                            m = re.match(r'brew\s+["\']([^"\']+)["\']', line)
+                            if m: formulae.append(m.group(1))
+                        elif line.startswith('cask '):
+                            m = re.match(r'cask\s+["\']([^"\']+)["\']', line)
+                            if m: casks.append(m.group(1))
+                        elif line.startswith('flatpak '):
+                            m = re.match(r'flatpak\s+["\']([^"\']+)["\']', line)
+                            if m: flatpaks.append(m.group(1))
+            except Exception as e:
+                _log.error('Error parsing Brewfile: %s', e)
+        
+        _log.info('Parsed Brewfile: taps=%d, formulae=%d, casks=%d, flatpaks=%d',
+                  len(taps), len(formulae), len(casks), len(flatpaks))
+        return {'taps': taps, 'formulae': formulae, 'casks': casks, 'flatpaks': flatpaks}
+
+    def get_flatpak_info(self, app_id):
+        """Fetch Flatpak appstream metadata from Flathub."""
+        from .logging_util import log_timing
+        with log_timing(f'fetch flatpak appstream {app_id}', 'brewfile'):
+            return self._fetch_json(FLATHUB_APPSTREAM_API.format(app_id))
 
 
     @property
@@ -277,7 +307,7 @@ class BrewBackend(GObject.Object):
         return self._casks
 
     def _fetch_json(self, url):
-        """Fetch JSON from URL with a timeout."""
+        """Fetch JSON from URL with a timeout and detailed error reporting."""
         _log.debug('Fetching JSON: %s', url)
         req = Request(url, headers={'User-Agent': 'Pasar/0.1'})
         try:
@@ -287,8 +317,16 @@ class BrewBackend(GObject.Object):
             _log.debug('Fetched JSON OK: %s  (items=%s)',
                        url, len(data) if isinstance(data, list) else '?')
             return data
-        except (URLError, json.JSONDecodeError, Exception) as e:
-            _log.error('Failed to fetch %s: %s', url, e)
+        except json.JSONDecodeError as e:
+            _log.error('JSON decode error from %s: %s', url, e)
+            return None
+        except URLError as e:
+            # Network/DNS/connection error
+            _log.error('Failed to fetch %s (network error): %s', url, e)
+            return None
+        except Exception as e:
+            # Timeout or other errors
+            _log.error('Failed to fetch %s: %s', url, type(e).__name__)
             return None
 
     def _cache_path(self, name):
@@ -872,6 +910,10 @@ class BrewBackend(GObject.Object):
                 _log.debug('Failed to load cached icon for %s: %s', package.name, e)
 
         icon_urls = []
+
+        # 0. Explicit icon URL (used by flatpak appstream metadata)
+        if getattr(package, 'icon_url', None):
+            icon_urls.append(package.icon_url)
 
         # 1. Scrape the homepage HTML for the best available favicon
         if package.homepage:

@@ -25,4 +25,5 @@ ninja -C "$BUILDDIR" install
 
 echo "==> Launching Pasar..."
 exec env GSETTINGS_SCHEMA_DIR="$HOME/.local/share/glib-2.0/schemas" \
+    XDG_DATA_DIRS="$BREW_PREFIX/share:$HOME/.local/share:/usr/local/share:/usr/share" \
     "$HOME/.local/bin/pasar" "$@"

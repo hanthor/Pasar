@@ -64,10 +64,11 @@ template $PasarBrewfilePage: Adw.Bin {
                   styles ["title-3"]
                 }
 
-                ListBox taps_list {
+                FlowBox taps_flow {
                   selection-mode: none;
-
-                  styles ["boxed-list"]
+                  column-spacing: 8;
+                  row-spacing: 8;
+                  homogeneous: false;
                 }
               }
 
@@ -110,6 +111,30 @@ template $PasarBrewfilePage: Adw.Bin {
                 }
 
                 FlowBox casks_flow {
+                  selection-mode: none;
+                  homogeneous: true;
+                  column-spacing: 8;
+                  row-spacing: 8;
+                  min-children-per-line: 2;
+                  max-children-per-line: 4;
+                }
+              }
+
+              /* Flatpaks Section */
+              Box flatpaks_section {
+                orientation: vertical;
+                spacing: 8;
+                visible: false;
+
+                Label {
+                  label: "Flatpaks";
+                  xalign: 0.0;
+                  margin-start: 4;
+
+                  styles ["title-2"]
+                }
+
+                FlowBox flatpaks_flow {
                   selection-mode: none;
                   homogeneous: true;
                   column-spacing: 8;

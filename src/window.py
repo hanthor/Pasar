@@ -35,29 +35,40 @@ class PasarWindow(Adw.ApplicationWindow):
     navigation_view = Gtk.Template.Child()
 
     def __init__(self, package_to_open=None, **kwargs):
+        import time
+        init_start = time.perf_counter()
+        
         super().__init__(**kwargs)
-        _log.debug('PasarWindow.__init__')
+        _log.info('PasarWindow.__init__: starting')
 
         # Store deeplink target
         self._package_to_open = package_to_open
         self._formulae_loaded = False
         self._casks_loaded = False
         self._brewfile_page_count = 0  # Counter for unique brewfile tab names
+        self._open_brewfiles = {}  # Map page_name -> brewfile path, to prevent duplicates
 
         # Shared backend
+        backend_start = time.perf_counter()
         self.backend = BrewBackend()
+        backend_time = (time.perf_counter() - backend_start) * 1000
+        _log.info('Backend created: %.1f ms', backend_time)
 
         # Task manager (central operation coordinator)
+        task_mgr_start = time.perf_counter()
         self.task_manager = TaskManager(self.backend)
         self.task_manager.connect('task-added', self._on_task_added)
         self.task_manager.connect('task-finished', self._on_task_finished)
         self.task_manager.connect('notify::active-count', self._on_active_count_changed)
         self.task_manager.connect('task-changed', self._on_task_progress_changed)
+        task_mgr_time = (time.perf_counter() - task_mgr_start) * 1000
+        _log.info('Task manager created: %.1f ms', task_mgr_time)
 
         # Task button in header bar
         self.task_button.connect('clicked', self._on_task_button_clicked)
 
         # Wire pages to backend
+        pages_start = time.perf_counter()
         self.browse_page.set_backend(self.backend)
         self.search_page.set_backend(self.backend)
         self.installed_page.set_backend(self.backend)
@@ -71,8 +82,11 @@ class PasarWindow(Adw.ApplicationWindow):
         self.browse_page.connect('install-requested', self._on_install_requested)
         self.search_page.connect('install-requested', self._on_install_requested)
         self.installed_page.connect('install-requested', self._on_install_requested)
+        pages_time = (time.perf_counter() - pages_start) * 1000
+        _log.info('Pages wired: %.1f ms', pages_time)
 
         # Window actions
+        actions_start = time.perf_counter()
         refresh_action = Gio.SimpleAction.new('refresh', None)
         refresh_action.connect('activate', self._on_refresh)
         self.add_action(refresh_action)
@@ -81,8 +95,11 @@ class PasarWindow(Adw.ApplicationWindow):
         open_brewfile_action.connect('activate', self._on_open_brewfile)
         self.add_action(open_brewfile_action)
         self.get_application().set_accels_for_action('win.open-brewfile', ['<Ctrl>o'])
+        actions_time = (time.perf_counter() - actions_start) * 1000
+        _log.info('Window actions setup: %.1f ms', actions_time)
 
         # Settings for size persistence
+        settings_start = time.perf_counter()
         self._settings = Gio.Settings.new('dev.jamesq.Pasar')
         self.set_default_size(
             self._settings.get_int('window-width'),
@@ -90,16 +107,24 @@ class PasarWindow(Adw.ApplicationWindow):
         )
         if self._settings.get_boolean('window-maximized'):
             self.maximize()
+        settings_time = (time.perf_counter() - settings_start) * 1000
+        _log.info('Settings restored: %.1f ms', settings_time)
 
         self.connect('close-request', self._on_close)
 
         # Start loading
+        backend_load_start = time.perf_counter()
         self.backend.connect('formulae-loaded', self._on_formulae_loaded)
         self.backend.connect('casks-loaded', self._on_casks_loaded)
         self.backend.connect('installed-loaded', self._on_installed_loaded)
         self.backend.connect('notify::loading', self._on_backend_loading_changed)
         _log.info('Kicking off backend.load_all_async()')
         self.backend.load_all_async()
+        backend_load_time = (time.perf_counter() - backend_load_start) * 1000
+        _log.info('Backend.load_all_async() started: %.1f ms', backend_load_time)
+        
+        total_init_time = (time.perf_counter() - init_start) * 1000
+        _log.info('PasarWindow.__init__: completed in %.1f ms', total_init_time)
 
     def _find_package_by_name(self, package_name):
         target = (package_name or '').strip().lower()
@@ -293,6 +318,19 @@ class PasarWindow(Adw.ApplicationWindow):
         """Open a Brewfile as a new tab in the main window."""
         import os
         
+        _log.info('open_brewfile called with path: %s', path)
+        
+        # Normalize the path for consistent comparison
+        abs_path = os.path.abspath(path)
+        
+        # Check if this Brewfile is already open
+        for page_name, brewfile_path in self._open_brewfiles.items():
+            if os.path.abspath(brewfile_path) == abs_path:
+                _log.info('Brewfile already open: %s', abs_path)
+                self.main_stack.set_visible_child_name(page_name)
+                self.toast_overlay.add_toast(Adw.Toast.new(f'Already viewing {os.path.basename(path)}'))
+                return
+        
         # Extract filename for tab title
         filename = os.path.basename(path)
         # Remove .Brewfile extension
@@ -319,6 +357,9 @@ class PasarWindow(Adw.ApplicationWindow):
         self._brewfile_page_count += 1
         page_name = f'brewfile_{self._brewfile_page_count}'
         
+        # Track this Brewfile
+        self._open_brewfiles[page_name] = abs_path
+        
         # Add page to stack
         stack_page = self.main_stack.add_titled(
             brewfile_page,
@@ -330,6 +371,7 @@ class PasarWindow(Adw.ApplicationWindow):
         self.main_stack.set_visible_child_name(page_name)
         
         # Load the brewfile
+        _log.info('Calling load_brewfile for: %s', path)
         brewfile_page.load_brewfile(path)
         
         _log.info('Added Brewfile tab: %s', title)
