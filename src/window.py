@@ -123,7 +123,6 @@ class PasarWindow(Adw.ApplicationWindow):
         self.backend.connect('formulae-loaded', self._on_formulae_loaded)
         self.backend.connect('casks-loaded', self._on_casks_loaded)
         self.backend.connect('installed-loaded', self._on_installed_loaded)
-        self.backend.connect('outdated-changed', self._on_outdated_changed)
         self.backend.connect('notify::loading', self._on_backend_loading_changed)
         _log.info('Kicking off backend.load_all_async()')
         self.backend.load_all_async()
