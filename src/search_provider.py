@@ -151,7 +151,8 @@ class PasarSearchProvider:
             
             # Map of name -> package struct for quick lookup
             pkg_map = {p.get('name'): p for p in self._packages_cache}
-            
+            cache_dir = os.path.join(GLib.get_user_cache_dir(), 'pasar')
+
             metas = []
             for pkg_id in ids:
                 pkg = pkg_map.get(pkg_id)
@@ -164,9 +165,16 @@ class PasarSearchProvider:
                     "description": GLib.Variant("s", pkg.get('description') or "")
                 }
                 
-                # Assign default icon based on package type
-                icon_name = "dev.hanthor.Pasar-symbolic" # Default
-                meta["icon"] = Gio.Icon.new_for_string(icon_name).serialize()
+                # Check if we have a downloaded cached icon for this package
+                icon_path = os.path.join(cache_dir, f'icon_{pkg_id}.png')
+                if os.path.exists(icon_path):
+                    gfile = Gio.File.new_for_path(icon_path)
+                    icon = Gio.FileIcon.new(gfile)
+                    meta["icon"] = icon.serialize()
+                else:
+                    # Assign default icon based on package type
+                    icon_name = "dev.hanthor.Pasar-symbolic" # Default
+                    meta["icon"] = Gio.Icon.new_for_string(icon_name).serialize()
                 
                 metas.append(meta)
 

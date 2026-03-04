@@ -26,6 +26,7 @@ class PasarPackageDetails(Adw.NavigationPage):
     __gsignals__ = {
         'package-changed': (GObject.SignalFlags.RUN_LAST, None, (object,)),
         'package-history-requested': (GObject.SignalFlags.RUN_LAST, None, (object,)),
+        'package-activated': (GObject.SignalFlags.RUN_LAST, None, (object,)),
     }
 
     details_stack = Gtk.Template.Child()
@@ -160,21 +161,26 @@ class PasarPackageDetails(Adw.NavigationPage):
         search_term = self._package.name.split('@')[0]
         results = self._backend.search(search_term)
         
-        # Filter out the current package itself
-        results = [p for p in results if p.name != self._package.name and p.full_name != self._package.full_name]
+        # Filter only related packages that share the base name
+        filtered = []
+        for p in results:
+            if p.name == self._package.name or p.full_name == self._package.full_name:
+                continue
+            if p.name == search_term or p.name.startswith(f"{search_term}@"):
+                filtered.append(p)
         
-        if not results:
+        if not filtered:
             self.related_bin.set_visible(False)
             return
             
-        results = results[:6]  # limit to top 6 related packages
+        filtered = filtered[:3]  # limit to top 3 related packages
         
         from .package_tile import PasarPackageTile
         
         while child := self.related_flow.get_first_child():
             self.related_flow.remove(child)
             
-        for pkg in results:
+        for pkg in filtered:
             tile = PasarPackageTile(package=pkg)
             tile.connect('clicked', self._on_related_clicked)
             tile.connect('install-requested', self._on_related_install_requested)
@@ -185,7 +191,7 @@ class PasarPackageDetails(Adw.NavigationPage):
     def _on_related_clicked(self, tile):
         pkg = tile.get_package()
         if pkg:
-            self.emit('package-changed', pkg)
+            self.emit('package-activated', pkg)
 
     def _on_related_install_requested(self, tile):
         pkg = tile.get_package()

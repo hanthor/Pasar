@@ -287,6 +287,7 @@ class PasarWindow(Adw.ApplicationWindow):
         )
         dialog.connect('package-changed', self._on_package_changed)
         dialog.connect('package-history-requested', self._on_package_history_requested)
+        dialog.connect('package-activated', self._on_package_activated)
         self.navigation_view.push(dialog)
 
     def _on_package_changed(self, dialog, package):
