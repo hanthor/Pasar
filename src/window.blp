@@ -48,35 +48,64 @@ template $PasarWindow: Adw.ApplicationWindow {
             }
           }
 
-          content: Box {
-            orientation: vertical;
+          content: Stack content_stack {
+            StackPage {
+              name: "loading";
+              child: Box {
+                halign: fill;
+                valign: center;
+                orientation: vertical;
+                spacing: 6;
 
-            Adw.ViewStack main_stack {
-              vexpand: true;
-              
-              Adw.ViewStackPage {
-                name: "browse";
-                title: "Browse";
-                icon-name: "view-grid-symbolic";
+                Adw.Spinner {
+                  width-request: 64;
+                  height-request: 64;
+                  margin-bottom: 18;
+                }
 
-                child: $PasarBrowsePage browse_page {};
-              }
+                Label {
+                  label: "Loading Homebrew Content…";
+                  wrap: true;
+                  justify: center;
+                  margin-bottom: 24;
+                  styles ["title-3"]
+                }
+              };
+            }
 
-              Adw.ViewStackPage {
-                name: "search";
-                title: "Search";
-                icon-name: "system-search-symbolic";
+            StackPage {
+              name: "main";
+              child: Box {
+                orientation: vertical;
 
-                child: $PasarSearchPage search_page {};
-              }
+                Adw.ViewStack main_stack {
+                  vexpand: true;
+                  
+                  Adw.ViewStackPage {
+                    name: "browse";
+                    title: "Browse";
+                    icon-name: "view-grid-symbolic";
 
-              Adw.ViewStackPage {
-                name: "installed";
-                title: "Installed";
-                icon-name: "view-list-symbolic";
+                    child: $PasarBrowsePage browse_page {};
+                  }
 
-                child: $PasarInstalledPage installed_page {};
-              }
+                  Adw.ViewStackPage {
+                    name: "search";
+                    title: "Search";
+                    icon-name: "system-search-symbolic";
+
+                    child: $PasarSearchPage search_page {};
+                  }
+
+                  Adw.ViewStackPage {
+                    name: "installed";
+                    title: "Installed";
+                    icon-name: "view-list-symbolic";
+
+                    child: $PasarInstalledPage installed_page {};
+                  }
+                }
+              };
             }
           };
         };

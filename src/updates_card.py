@@ -19,7 +19,7 @@ class UpdatesCard(Gtk.Box):
 
     __gsignals__ = {
         'update-all-requested': (GObject.SignalFlags.RUN_LAST, None, ()),
-        'package-history-requested': (GObject.SignalFlags.RUN_LAST, None, (object,)),  # package object
+        'package-activated': (GObject.SignalFlags.RUN_LAST, None, (object,)),  # package object
     }
 
     def __init__(self, **kwargs):
@@ -185,7 +185,7 @@ class UpdatesCard(Gtk.Box):
         return None
 
     def _on_row_activated(self, listbox, row):
-        """Handle row activation - emit signal to show version history."""
+        """Handle row activation - emit signal to show package details."""
         if row:
             name = getattr(row, '_package_name', None)
             pkg_type = getattr(row, '_package_type', None)
@@ -193,6 +193,6 @@ class UpdatesCard(Gtk.Box):
                 _log.info('Activated package: %s (%s)', name, pkg_type)
                 package = self._find_package(name, pkg_type)
                 if package:
-                    self.emit('package-history-requested', package)
+                    self.emit('package-activated', package)
                 else:
-                    _log.warning('Could not find package for history: %s (%s)', name, pkg_type)
+                    _log.warning('Could not find package for details: %s (%s)', name, pkg_type)

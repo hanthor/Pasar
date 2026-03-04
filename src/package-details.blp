@@ -128,6 +128,12 @@ template $PasarPackageDetails: Adw.NavigationPage {
                       visible: false;
                       styles ["destructive-action", "pill"]
                     }
+
+                    Button update_button {
+                      label: "Update";
+                      visible: false;
+                      styles ["suggested-action", "pill"]
+                    }
                   }
                 }
               }
@@ -176,7 +182,7 @@ template $PasarPackageDetails: Adw.NavigationPage {
                   styles ["boxed-list"]
 
                   ListBoxRow version_row {
-                    activatable: false;
+                    activatable: true;
                     
                     Box {
                       orientation: horizontal;
@@ -195,6 +201,11 @@ template $PasarPackageDetails: Adw.NavigationPage {
                       Label version_label {
                         xalign: 1.0;
                         styles ["dim-label"]
+                      }
+
+                      Image {
+                          icon-name: "go-next-symbolic";
+                          styles ["dim-label"]
                       }
                     }
                   }
@@ -251,29 +262,7 @@ template $PasarPackageDetails: Adw.NavigationPage {
                     }
                   }
 
-                    ListBoxRow type_row {
-                      activatable: false;
-                      
-                      Box {
-                        orientation: horizontal;
-                        spacing: 12;
-                        margin-start: 12;
-                        margin-end: 12;
-                        margin-top: 10;
-                        margin-bottom: 10;
 
-                        Label {
-                          label: "Type";
-                          xalign: 0.0;
-                          hexpand: true;
-                        }
-
-                        Label type_label {
-                          xalign: 1.0;
-                          styles ["dim-label"]
-                        }
-                      }
-                    }
 
                     ListBoxRow installs_row {
                       activatable: true;

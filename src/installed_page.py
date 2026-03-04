@@ -21,7 +21,6 @@ class PasarInstalledPage(Adw.Bin):
     __gsignals__ = {
         'package-activated': (GObject.SignalFlags.RUN_LAST, None, (object,)),
         'install-requested': (GObject.SignalFlags.RUN_LAST, None, (object,)),
-        'package-history-requested': (GObject.SignalFlags.RUN_LAST, None, (object,)),
         'outdated-count-changed': (GObject.SignalFlags.RUN_LAST, None, (int,)),
     }
 
@@ -43,20 +42,16 @@ class PasarInstalledPage(Adw.Bin):
         # Configure UpdatesCard
         self.updates_card.set_backend(backend)
         self.updates_card.set_task_manager(task_manager)
-        self.updates_card.connect('package-history-requested', self._on_package_history_requested)
+        self.updates_card.connect('package-activated', self._on_updates_card_package_activated)
 
     def _on_outdated_changed(self, backend, outdated_data):
         count = len(outdated_data) if outdated_data else 0
         self.updates_card.set_visible(bool(count > 0))
         self.emit('outdated-count-changed', count)
 
-    def _on_package_history_requested(self, card, package):
-        """Open version history dialog for a package."""
-        from .version_history_dialog import PasarVersionHistoryDialog
-        
-        # We need access to the window's navigation view.
-        # This will emit a signal to the window handling it.
-        self.emit('package-history-requested', package)
+    def _on_updates_card_package_activated(self, card, package):
+        """Open package details for a package from the updates card."""
+        self.emit('package-activated', package)
 
     def _on_packages_loaded(self, backend, packages):
         self.refresh(backend)

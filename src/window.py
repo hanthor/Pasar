@@ -28,6 +28,7 @@ class PasarWindow(Adw.ApplicationWindow):
     __gtype_name__ = 'PasarWindow'
 
     toast_overlay = Gtk.Template.Child()
+    content_stack = Gtk.Template.Child()
     browse_page = Gtk.Template.Child()
     search_page = Gtk.Template.Child()
     installed_page = Gtk.Template.Child()
@@ -48,7 +49,11 @@ class PasarWindow(Adw.ApplicationWindow):
         self._formulae_loaded = False
         self._casks_loaded = False
         self._brewfile_page_count = 0  # Counter for unique brewfile tab names
-        self._open_brewfiles = {}  # Map page_name -> brewfile path, to prevent duplicates
+        # Track initial fetching
+        self._initial_load_done = False
+
+        # Show loading page
+        self.content_stack.set_visible_child_name("loading")
 
         # Shared backend
         backend_start = time.perf_counter()
@@ -81,7 +86,6 @@ class PasarWindow(Adw.ApplicationWindow):
         self.browse_page.connect('package-activated', self._on_package_activated)
         self.search_page.connect('package-activated', self._on_package_activated)
         self.installed_page.connect('package-activated', self._on_package_activated)
-        self.installed_page.connect('package-history-requested', self._on_package_history_requested)
         self.installed_page.connect('outdated-count-changed', self._on_outdated_count_changed)
 
         # Wire package install signals from inline tile buttons
@@ -254,6 +258,12 @@ class PasarWindow(Adw.ApplicationWindow):
     def _on_backend_loading_changed(self, backend, _pspec):
         if backend.loading:
             return
+
+        if not self._initial_load_done:
+            self._initial_load_done = True
+            # Transition to main content smoothly
+            self.content_stack.set_visible_child_name("main")
+
         if self._package_to_open:
             self.open_package_by_name(self._package_to_open, show_not_found=True)
             self._package_to_open = None
@@ -276,6 +286,7 @@ class PasarWindow(Adw.ApplicationWindow):
             task_manager=self.task_manager,
         )
         dialog.connect('package-changed', self._on_package_changed)
+        dialog.connect('package-history-requested', self._on_package_history_requested)
         self.navigation_view.push(dialog)
 
     def _on_package_changed(self, dialog, package):

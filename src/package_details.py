@@ -25,6 +25,7 @@ class PasarPackageDetails(Adw.NavigationPage):
 
     __gsignals__ = {
         'package-changed': (GObject.SignalFlags.RUN_LAST, None, (object,)),
+        'package-history-requested': (GObject.SignalFlags.RUN_LAST, None, (object,)),
     }
 
     details_stack = Gtk.Template.Child()
@@ -35,6 +36,7 @@ class PasarPackageDetails(Adw.NavigationPage):
     detail_desc = Gtk.Template.Child()
     install_button = Gtk.Template.Child()
     remove_button = Gtk.Template.Child()
+    update_button = Gtk.Template.Child()
     version_row = Gtk.Template.Child()
     version_label = Gtk.Template.Child()
     license_row = Gtk.Template.Child()
@@ -42,8 +44,6 @@ class PasarPackageDetails(Adw.NavigationPage):
     info_listbox = Gtk.Template.Child()
     homepage_row = Gtk.Template.Child()
     homepage_label = Gtk.Template.Child()
-    type_row = Gtk.Template.Child()
-    type_label = Gtk.Template.Child()
     installs_row = Gtk.Template.Child()
     installs_stack = Gtk.Template.Child()
     installs_label = Gtk.Template.Child()
@@ -73,6 +73,7 @@ class PasarPackageDetails(Adw.NavigationPage):
 
         self.install_button.connect('clicked', self._on_install_clicked)
         self.remove_button.connect('clicked', self._on_remove_clicked)
+        self.update_button.connect('clicked', self._on_update_clicked)
         self.info_listbox.connect('row-activated', self._on_info_row_activated)
         self.screenshot_button.connect('clicked', self._on_screenshot_clicked)
         # No button connections needed for README (using blueprint callback)
@@ -111,10 +112,6 @@ class PasarPackageDetails(Adw.NavigationPage):
 
         _log.debug('Setting version_label: %s', package.version or 'Unknown')
         self.version_label.set_label(package.version or 'Unknown')
-        self.type_label.set_label(
-            'Cask (GUI App / Binary)' if package.pkg_type == 'cask'
-            else 'Formula (CLI / Library)'
-        )
 
         if package.license_:
             _log.debug('Setting license: %s', package.license_)
@@ -198,13 +195,22 @@ class PasarPackageDetails(Adw.NavigationPage):
     def _update_buttons(self):
         pkg = self._package
         busy = self._task is not None and self._task.is_active
+        
+        is_outdated = False
+        if self._backend and hasattr(self._backend, '_outdated_formulae'):
+            if pkg.name in getattr(self._backend, '_outdated_formulae', {}) or pkg.name in getattr(self._backend, '_outdated_casks', {}):
+                is_outdated = True
+
         if pkg.installed:
             self.install_button.set_visible(False)
             self.remove_button.set_visible(True)
             self.remove_button.set_sensitive(not busy)
+            self.update_button.set_visible(is_outdated)
+            self.update_button.set_sensitive(not busy)
         else:
             self.install_button.set_visible(True)
             self.remove_button.set_visible(False)
+            self.update_button.set_visible(False)
             self.install_button.set_sensitive(not busy)
 
     def _on_info_loaded(self, package, data):
@@ -420,6 +426,13 @@ class PasarPackageDetails(Adw.NavigationPage):
         task = self._task_manager.install(self._package)
         self._bind_task(task)
 
+    def _on_update_clicked(self, button):
+        if not self._task_manager:
+            return
+        _log.info('Update clicked: %s', self._package.name)
+        task = self._task_manager.install(self._package)  # Upgrade uses the install operation
+        self._bind_task(task)
+
     def _on_remove_clicked(self, button):
         if not self._task_manager:
             return
@@ -428,7 +441,9 @@ class PasarPackageDetails(Adw.NavigationPage):
         self._bind_task(task)
 
     def _on_info_row_activated(self, listbox, row):
-        if row == self.homepage_row and self._package and self._package.homepage:
+        if row == self.version_row and self._package:
+            self.emit('package-history-requested', self._package)
+        elif row == self.homepage_row and self._package and self._package.homepage:
             launcher = Gtk.UriLauncher.new(self._package.homepage)
             launcher.launch(self.get_root(), None, None, None)
         elif row == self.installs_row and self._package and self._package._raw_analytics:
