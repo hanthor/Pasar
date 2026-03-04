@@ -171,7 +171,7 @@ template $PasarPackageDetails: Adw.NavigationPage {
                   styles ["title-2"]
                 }
 
-                ListBox {
+                ListBox info_listbox {
                   selection-mode: none;
                   styles ["boxed-list"]
 
@@ -251,29 +251,72 @@ template $PasarPackageDetails: Adw.NavigationPage {
                     }
                   }
 
-                  ListBoxRow type_row {
-                    activatable: false;
-                    
-                    Box {
-                      orientation: horizontal;
-                      spacing: 12;
-                      margin-start: 12;
-                      margin-end: 12;
-                      margin-top: 10;
-                      margin-bottom: 10;
+                    ListBoxRow type_row {
+                      activatable: false;
+                      
+                      Box {
+                        orientation: horizontal;
+                        spacing: 12;
+                        margin-start: 12;
+                        margin-end: 12;
+                        margin-top: 10;
+                        margin-bottom: 10;
 
-                      Label {
-                        label: "Type";
-                        xalign: 0.0;
-                        hexpand: true;
-                      }
+                        Label {
+                          label: "Type";
+                          xalign: 0.0;
+                          hexpand: true;
+                        }
 
-                      Label type_label {
-                        xalign: 1.0;
-                        styles ["dim-label"]
+                        Label type_label {
+                          xalign: 1.0;
+                          styles ["dim-label"]
+                        }
                       }
                     }
-                  }
+
+                    ListBoxRow installs_row {
+                      activatable: true;
+                      
+                      Box {
+                        orientation: horizontal;
+                        spacing: 12;
+                        margin-start: 12;
+                        margin-end: 12;
+                        margin-top: 10;
+                        margin-bottom: 10;
+
+                        Label {
+                          label: "Installs (90 days)";
+                          xalign: 0.0;
+                          hexpand: true;
+                        }
+
+                        Stack installs_stack {
+                           visible-child-name: "spinner";
+
+                           StackPage {
+                             name: "spinner";
+                             child: Spinner installs_spinner {
+                               spinning: true;
+                             };
+                           }
+
+                           StackPage {
+                             name: "label";
+                             child: Label installs_label {
+                               xalign: 1.0;
+                               styles ["dim-label"]
+                             };
+                           }
+                        }
+
+                        Image {
+                            icon-name: "go-next-symbolic";
+                            styles ["dim-label"]
+                        }
+                      }
+                    }
                 }
               }
 
@@ -291,50 +334,56 @@ template $PasarPackageDetails: Adw.NavigationPage {
                   styles ["title-2"]
                 }
 
-                Box readme_card_box {
-                  orientation: vertical;
+                /* Preview mode: truncated text + fade overlay */
+                Overlay readme_overlay {
                   styles ["readme-container"]
 
-                  Stack readme_stack {
-                    hexpand: true;
-                    vexpand: true;
-                    transition-type: crossfade;
+                  /* Base: preview text label, clipped */
+                  Box readme_preview_box {
+                    orientation: vertical;
+                    margin-start: 16;
+                    margin-end: 16;
+                    margin-top: 16;
+                    margin-bottom: 16;
 
-                    StackPage {
-                      name: "button";
-                      child: 
-                        Box {
-                          orientation: vertical;
-                          halign: center;
-                          valign: center;
-                          margin-top: 24;
-                          margin-bottom: 24;
-                          spacing: 12;
-
-                          Image {
-                            icon-name: "text-x-generic-symbolic";
-                            pixel-size: 48;
-                            styles ["dim-label"]
-                          }
-
-                          Button show_readme_button {
-                            label: _("Show README");
-                            styles ["suggested-action", "pill"]
-                            clicked => $on_show_readme_clicked();
-                          }
-                        };
-                    }
-
-                    StackPage {
-                      name: "webview";
-                      child: 
-                        WebKit.WebView readme_webview {
-                          hexpand: true;
-                          vexpand: true;
-                          styles ["readme-webview"]
-                        };
+                    Label readme_preview_label {
+                      xalign: 0.0;
+                      wrap: true;
+                      wrap-mode: word_char;
+                      lines: 6;
+                      ellipsize: none;
+                      styles ["readme-preview-text"]
                     }
                   }
+
+                  /* Gradient fade + "Read More" overlay */
+                  [overlay]
+                  Box readme_fade_overlay {
+                    orientation: vertical;
+                    valign: end;
+                    hexpand: true;
+                    styles ["readme-fade-overlay"]
+
+                    Box {
+                      halign: center;
+                      valign: end;
+                      margin-bottom: 12;
+
+                      Button show_readme_button {
+                        label: _("Read More");
+                        styles ["pill", "readme-read-more-btn"]
+                        clicked => $on_show_readme_clicked();
+                      }
+                    }
+                  }
+                }
+
+                /* Full WebView (hidden initially) */
+                WebKit.WebView readme_webview {
+                  hexpand: true;
+                  vexpand: true;
+                  visible: false;
+                  styles ["readme-webview"]
                 }
               }
 

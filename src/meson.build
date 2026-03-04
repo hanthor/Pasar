@@ -12,6 +12,7 @@ blueprints = custom_target('blueprints',
     'task-panel.blp',
     'brewfile-dialog.blp',
     'brewfile-page.blp',
+    'stats-dialog.blp',
   ),
   output: '.',
   command: [
@@ -64,6 +65,7 @@ pasar_sources = [
   'updates_card.py',
   'version_history_dialog.py',
   'screenshot_lightbox.py',
+  'stats_dialog.py',
 ]
 
 install_data(pasar_sources, install_dir: pkgdatadir / 'pasar')

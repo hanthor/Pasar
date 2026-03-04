@@ -71,6 +71,46 @@ class TestPackageCask:
         assert 'mozilla' in pkg.source_url
 
 
+# ─── Package Analytics ───────────────────────────────────────────────────────
+
+class TestPackageAnalytics:
+    def test_formula_analytics_parsed(self):
+        data = {
+            'analytics': {
+                'install_on_request': {
+                    '30d': {'wget': 27768, 'wget --HEAD': 42},
+                    '90d': {'wget': 82993, 'wget --HEAD': 121},
+                    '365d': {'wget': 504399, 'wget --HEAD': 926}
+                }
+            }
+        }
+        pkg = Package(data, 'formula')
+        assert pkg.installs_30d == 27810
+        assert pkg.installs_90d == 83114
+        assert pkg.installs_365d == 505325
+
+    def test_cask_analytics_fallback(self):
+        data = {
+            'analytics': {
+                'install': {
+                    '30d': {'firefox': 100},
+                    '90d': {'firefox': 200},
+                    '365d': {'firefox': 300}
+                }
+            }
+        }
+        pkg = Package(data, 'cask')
+        assert pkg.installs_30d == 100
+        assert pkg.installs_90d == 200
+        assert pkg.installs_365d == 300
+
+    def test_missing_analytics_defaults_zero(self):
+        pkg = Package({}, 'formula')
+        assert pkg.installs_30d == 0
+        assert pkg.installs_90d == 0
+        assert pkg.installs_365d == 0
+
+
 # ─── BrewBackend ─────────────────────────────────────────────────────────────
 
 class TestBrewBackend:

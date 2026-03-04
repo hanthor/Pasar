@@ -6,8 +6,9 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Adw, Gio, Gtk
+from gi.repository import Adw, Gio, GLib, Gtk
 from .window import PasarWindow
+from .search_provider import PasarSearchProvider
 from .logging_util import get_logger
 
 _log = get_logger('application')
@@ -19,16 +20,45 @@ class PasarApplication(Adw.Application):
     def __init__(self, version='0.1.0', **kwargs):
         super().__init__(
             application_id='dev.hanthor.Pasar',
-            flags=Gio.ApplicationFlags.HANDLES_OPEN | Gio.ApplicationFlags.HANDLES_COMMAND_LINE | Gio.ApplicationFlags.NON_UNIQUE,
+            flags=Gio.ApplicationFlags.HANDLES_OPEN | Gio.ApplicationFlags.HANDLES_COMMAND_LINE,
             **kwargs,
         )
         self.version = version
         self._package_to_open = None
         self._brewfile_to_open = None
         
+        self._search_provider = None
+
         self.create_action('quit', lambda *_: self.quit(), ['<primary>q'])
         self.create_action('about', self._on_about_action)
+
+        # Action used by the GNOME Shell search provider to open a package
+        show_pkg = Gio.SimpleAction.new('show-package', GLib.VariantType.new('s'))
+        show_pkg.connect('activate', self._on_show_package)
+        self.add_action(show_pkg)
+
         _log.debug('PasarApplication created  version=%s', version)
+
+    # ── D-Bus registration (for GNOME Shell search provider) ──────
+    def do_dbus_register(self, connection, object_path):
+        """Export search provider interface before the app is activated."""
+        self._search_provider = PasarSearchProvider(self)
+        self._search_provider.export(connection)
+        return Gio.Application.do_dbus_register(self, connection, object_path)
+
+    def do_dbus_unregister(self, connection, object_path):
+        """Unexport search provider on shutdown."""
+        if self._search_provider:
+            self._search_provider.unexport()
+        Gio.Application.do_dbus_unregister(self, connection, object_path)
+
+    # ── Show-package action (search provider deep-link) ──────────
+    def _on_show_package(self, action, param):
+        """Handle the show-package action from the search provider."""
+        pkg_name = param.get_string()
+        _log.info('show-package action: %s', pkg_name)
+        self._package_to_open = pkg_name
+        self.activate()
 
     def do_command_line(self, command_line):
         """Handle command-line arguments."""

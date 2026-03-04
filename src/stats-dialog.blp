@@ -1,0 +1,143 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $PasarStatsDialog: Adw.Dialog {
+  width-request: 360;
+  height-request: 450;
+  content-width: 400;
+  content-height: 500;
+  
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      show-start-title-buttons: false;
+      show-end-title-buttons: true;
+      title-widget: Adw.WindowTitle {
+        title: _("Install Statistics");
+      };
+    }
+
+    content: Box {
+      orientation: vertical;
+      spacing: 24;
+      margin-top: 24;
+      margin-bottom: 24;
+      margin-start: 24;
+      margin-end: 24;
+
+      Label total_installs_label {
+        styles ["title-1"]
+        halign: center;
+        margin-bottom: 8;
+      }
+
+      Box {
+        orientation: vertical;
+        spacing: 12;
+
+        Label {
+          label: _("Installs over time");
+          styles ["title-4"]
+          halign: start;
+        }
+
+        ListBox {
+          selection-mode: none;
+          styles ["boxed-list"]
+
+          Adw.ActionRow row_30d {
+            title: _("Last 30 days");
+            [suffix]
+            Label count_30d {
+              styles ["dim-label"]
+            }
+          }
+
+          Adw.ActionRow row_90d {
+            title: _("Last 90 days");
+            [suffix]
+            Label count_90d {
+              styles ["dim-label"]
+            }
+          }
+
+          Adw.ActionRow row_365d {
+            title: _("Last 365 days");
+            [suffix]
+            Label count_365d {
+              styles ["dim-label"]
+            }
+          }
+        }
+      }
+
+      Box {
+        orientation: vertical;
+        spacing: 12;
+        margin-top: 8;
+
+        Label {
+          label: _("Comparison");
+          styles ["title-4"]
+          halign: start;
+        }
+
+        /* Simple bar chart container */
+        Box {
+          orientation: vertical;
+          spacing: 12;
+          styles ["card"]
+          margin-top: 16;
+          margin-bottom: 16;
+          margin-start: 16;
+          margin-end: 16;
+
+          /* 30d Bar */
+          Box {
+            orientation: horizontal;
+            spacing: 8;
+            Label { label: "30d"; width-request: 40; xalign: 1.0; styles ["dim-label", "caption"] }
+            Box {
+              hexpand: true;
+              valign: center;
+              ProgressBar bar_30d {
+                hexpand: true;
+                styles ["stats-bar"]
+              }
+            }
+          }
+
+          /* 90d Bar */
+          Box {
+            orientation: horizontal;
+            spacing: 8;
+            Label { label: "90d"; width-request: 40; xalign: 1.0; styles ["dim-label", "caption"] }
+            Box {
+              hexpand: true;
+              valign: center;
+              ProgressBar bar_90d {
+                hexpand: true;
+                styles ["stats-bar"]
+              }
+            }
+          }
+
+          /* 365d Bar */
+          Box {
+            orientation: horizontal;
+            spacing: 8;
+            Label { label: "365d"; width-request: 40; xalign: 1.0; styles ["dim-label", "caption"] }
+            Box {
+              hexpand: true;
+              valign: center;
+              ProgressBar bar_365d {
+                hexpand: true;
+                styles ["stats-bar"]
+              }
+            }
+          }
+        }
+      }
+    };
+  };
+}

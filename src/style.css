@@ -267,6 +267,32 @@ button.updates-button:hover {
   margin-top: 4px;
 }
 
+.readme-preview-text {
+  font-size: 0.9em;
+  line-height: 1.55;
+  color: alpha(@window_fg_color, 0.85);
+}
+
+.readme-fade-overlay {
+  background: linear-gradient(to bottom,
+      alpha(@card_bg_color, 0.0) 0%,
+      alpha(@card_bg_color, 0.6) 40%,
+      @card_bg_color 70%);
+  min-height: 80px;
+  padding-top: 24px;
+}
+
+.readme-read-more-btn {
+  background-color: alpha(@accent_bg_color, 0.15);
+  color: @accent_color;
+  font-weight: 600;
+  border: 1px solid alpha(@accent_bg_color, 0.3);
+}
+
+.readme-read-more-btn:hover {
+  background-color: alpha(@accent_bg_color, 0.25);
+}
+
 .readme-webview {
   background-color: transparent;
 }
@@ -303,4 +329,21 @@ button.updates-button:hover {
 .clickable-screenshot:hover {
   transform: scale(1.02);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* ===== Stats Check ===== */
+.stats-bar {
+  border-radius: 999px;
+  min-height: 12px;
+}
+
+.stats-bar trough {
+  border-radius: 999px;
+  min-height: 12px;
+  background-color: alpha(@window_fg_color, 0.1);
+}
+
+.stats-bar progress {
+  border-radius: 999px;
+  background-color: @accent_color;
 }

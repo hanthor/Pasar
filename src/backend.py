@@ -182,8 +182,14 @@ class Package(GObject.Object):
     icon_url = GObject.Property(type=str, default='')
     license_ = GObject.Property(type=str, default='')
 
+    # Analytics
+    installs_30d = GObject.Property(type=int, default=0)
+    installs_90d = GObject.Property(type=int, default=0)
+    installs_365d = GObject.Property(type=int, default=0)
+
     def __init__(self, data=None, pkg_type='formula', installed_set=None, **kwargs):
         super().__init__(**kwargs)
+        self._raw_analytics = {}
         if data:
             self._from_api(data, pkg_type, installed_set)
 
@@ -231,6 +237,24 @@ class Package(GObject.Object):
 
         if installed_set:
             self.installed = self.name in installed_set or self.full_name in installed_set
+
+        # Parse analytics if present
+        analytics = data.get('analytics', {})
+        self._raw_analytics = analytics
+        if analytics:
+            # Prefer 'install_on_request' for formulae, fall back to 'install' for casks
+            metrics = analytics.get('install_on_request', {})
+            if not metrics:
+                metrics = analytics.get('install', {})
+            
+            def _sum_period(period_data):
+                if not isinstance(period_data, dict):
+                    return 0
+                return sum(val for val in period_data.values() if isinstance(val, int))
+            
+            self.installs_30d = _sum_period(metrics.get('30d', {}))
+            self.installs_90d = _sum_period(metrics.get('90d', {}))
+            self.installs_365d = _sum_period(metrics.get('365d', {}))
 
 
 

@@ -39,18 +39,24 @@ class PasarPackageDetails(Adw.NavigationPage):
     version_label = Gtk.Template.Child()
     license_row = Gtk.Template.Child()
     license_label = Gtk.Template.Child()
+    info_listbox = Gtk.Template.Child()
     homepage_row = Gtk.Template.Child()
     homepage_label = Gtk.Template.Child()
     type_row = Gtk.Template.Child()
     type_label = Gtk.Template.Child()
+    installs_row = Gtk.Template.Child()
+    installs_stack = Gtk.Template.Child()
+    installs_label = Gtk.Template.Child()
     error_label = Gtk.Template.Child()
     detail_progress_bar = Gtk.Template.Child()
     screenshot_bin = Gtk.Template.Child()
     screenshot_button = Gtk.Template.Child()
     screenshot_picture = Gtk.Template.Child()
     readme_bin = Gtk.Template.Child()
-    readme_card_box = Gtk.Template.Child()
-    readme_stack = Gtk.Template.Child()
+    readme_overlay = Gtk.Template.Child()
+    readme_preview_box = Gtk.Template.Child()
+    readme_preview_label = Gtk.Template.Child()
+    readme_fade_overlay = Gtk.Template.Child()
     show_readme_button = Gtk.Template.Child()
     readme_webview = Gtk.Template.Child()
     related_bin = Gtk.Template.Child()
@@ -67,7 +73,7 @@ class PasarPackageDetails(Adw.NavigationPage):
 
         self.install_button.connect('clicked', self._on_install_clicked)
         self.remove_button.connect('clicked', self._on_remove_clicked)
-        self.homepage_row.connect('activate', self._on_homepage_activated)
+        self.info_listbox.connect('row-activated', self._on_info_row_activated)
         self.screenshot_button.connect('clicked', self._on_screenshot_clicked)
         # No button connections needed for README (using blueprint callback)
         self.readme_webview.connect('decide-policy', self._on_readme_decide_policy)
@@ -85,8 +91,10 @@ class PasarPackageDetails(Adw.NavigationPage):
         
         self.set_title(package.display_name or package.name)
         self.readme_bin.set_visible(False)
-        self.readme_stack.set_visible_child_name('button')
+        self.readme_overlay.set_visible(True)
+        self.readme_webview.set_visible(False)
         self.readme_webview.set_property('height-request', 20)
+        self.readme_preview_label.set_label('')
         self._readme_text = None
         
         self.detail_name.set_label(package.name)
@@ -123,6 +131,14 @@ class PasarPackageDetails(Adw.NavigationPage):
             self.homepage_label.set_label('Not available')
             _log.debug('No homepage for %s', package.name)
 
+        # Show the installs row initially with the spinner active
+        if package.pkg_type == 'cask' or package.pkg_type == 'formula':
+            self.installs_row.set_visible(True)
+            self.installs_stack.set_visible_child_name('spinner')
+            self.installs_row.set_sensitive(False)  # Not clickable until loaded
+        else:
+            self.installs_row.set_visible(False)
+
         self._update_buttons()
         self.details_stack.set_visible_child_name('content')
 
@@ -137,6 +153,7 @@ class PasarPackageDetails(Adw.NavigationPage):
             self._backend.fetch_icon_async(package, self._on_icon_fetched)
             self._backend.fetch_screenshot_async(package, self._on_screenshot_fetched)
             self._backend.fetch_readme_async(package, self._on_readme_fetched)
+            self._backend.get_package_info_async(package, self._on_info_loaded)
             GLib.idle_add(self._load_related_packages)
 
     def _load_related_packages(self):
@@ -190,6 +207,30 @@ class PasarPackageDetails(Adw.NavigationPage):
             self.remove_button.set_visible(False)
             self.install_button.set_sensitive(not busy)
 
+    def _on_info_loaded(self, package, data):
+        if package != self._package:
+            return
+            
+        if data:
+            # Re-parse API data into the existing Package object so analytics are updated
+            package._from_api(data, package.pkg_type)
+        
+        # Now update the UI with the fresh installs data (or hide if failed to load)
+        if package.installs_90d > 0:
+            count = package.installs_90d
+            if count >= 1_000_000:
+                formatted = f"{count / 1_000_000:.2f}M"
+            elif count >= 1000:
+                formatted = f"{count / 1000:.2f}K"
+            else:
+                formatted = f"{count:,}"
+            self.installs_label.set_label(formatted)
+            self.installs_stack.set_visible_child_name('label')
+            self.installs_row.set_sensitive(True)
+        else:
+            self.installs_row.set_visible(False)
+            self.installs_row.set_sensitive(False)
+
     def _on_icon_fetched(self, package, pixbuf):
         if pixbuf and package == self._package:
             try:
@@ -219,15 +260,32 @@ class PasarPackageDetails(Adw.NavigationPage):
         if not text or package != self._package:
             return
         self._readme_text = text
+        # Build a plain-text preview from the first ~6 lines, skipping headings/blanks
+        preview_lines = []
+        for line in text.splitlines():
+            stripped = line.strip()
+            # Skip markdown headings, blank lines, images, badges, horizontal rules
+            if not stripped or stripped.startswith('#') or stripped.startswith('!') or stripped.startswith('---') or stripped.startswith('==='):
+                continue
+            # Strip inline markdown formatting for preview
+            clean = stripped.lstrip('*_>`-').strip()
+            if clean:
+                preview_lines.append(clean)
+            if len(preview_lines) >= 6:
+                break
+        preview_text = '\n'.join(preview_lines) if preview_lines else text[:300]
+        self.readme_preview_label.set_label(preview_text)
         self.readme_bin.set_visible(True)
 
     @Gtk.Template.Callback()
     def on_show_readme_clicked(self, *args):
         if self._readme_text:
             _log.debug('On-demand README loading triggered')
+            # Hide preview overlay, show full WebView
+            self.readme_overlay.set_visible(False)
+            self.readme_webview.set_visible(True)
             self.readme_webview.set_property('height-request', 400)
             self._render_readme(self._readme_text)
-            self.readme_stack.set_visible_child_name('webview')
 
     def _render_readme(self, text):
         """Render Markdown text into the readme_webview using the markdown library."""
@@ -369,7 +427,16 @@ class PasarPackageDetails(Adw.NavigationPage):
         task = self._task_manager.remove(self._package)
         self._bind_task(task)
 
-    def _on_homepage_activated(self, row):
-        if self._package and self._package.homepage:
+    def _on_info_row_activated(self, listbox, row):
+        if row == self.homepage_row and self._package and self._package.homepage:
             launcher = Gtk.UriLauncher.new(self._package.homepage)
             launcher.launch(self.get_root(), None, None, None)
+        elif row == self.installs_row and self._package and self._package._raw_analytics:
+            try:
+                from .stats_dialog import PasarStatsDialog
+                dialog = PasarStatsDialog(self._package)
+                dialog.present(self.get_root())
+            except ImportError:
+                _log.error('PasarStatsDialog not found')
+            except Exception as e:
+                _log.error('Failed to open stats dialog: %s', e)
