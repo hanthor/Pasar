@@ -92,6 +92,7 @@ class PasarPackageDetails(Adw.NavigationPage):
         _log = get_logger('package_details')
         
         self.set_title(package.display_name or package.name)
+        self.set_tag(f"details_{package.name}_{id(self)}")
         self.readme_bin.set_visible(False)
         self.readme_overlay.set_visible(True)
         self.readme_webview.set_visible(False)
@@ -161,13 +162,17 @@ class PasarPackageDetails(Adw.NavigationPage):
         search_term = self._package.name.split('@')[0]
         results = self._backend.search(search_term)
         
-        # Filter only related packages that share the base name
+        # Filter out ANY version of the current package from the generic search results
         filtered = []
         for p in results:
             if p.name == self._package.name or p.full_name == self._package.full_name:
                 continue
-            if p.name == search_term or p.name.startswith(f"{search_term}@"):
-                filtered.append(p)
+            
+            p_base = p.name.split('@')[0]
+            if p_base == search_term:
+                continue
+                
+            filtered.append(p)
         
         if not filtered:
             self.related_bin.set_visible(False)
