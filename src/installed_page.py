@@ -8,6 +8,7 @@ gi.require_version('Adw', '1')
 from gi.repository import Adw, Gtk, GObject
 from .backend import BrewBackend
 from .package_tile import PasarPackageTile
+from .updates_card import UpdatesCard
 from .logging_util import get_logger
 
 _log = get_logger('installed_page')
@@ -20,19 +21,42 @@ class PasarInstalledPage(Adw.Bin):
     __gsignals__ = {
         'package-activated': (GObject.SignalFlags.RUN_LAST, None, (object,)),
         'install-requested': (GObject.SignalFlags.RUN_LAST, None, (object,)),
+        'package-history-requested': (GObject.SignalFlags.RUN_LAST, None, (object,)),
+        'outdated-count-changed': (GObject.SignalFlags.RUN_LAST, None, (int,)),
     }
 
     installed_stack = Gtk.Template.Child()
     installed_flow = Gtk.Template.Child()
+    updates_card = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._backend = None
 
-    def set_backend(self, backend):
+    def set_backend_and_manager(self, backend, task_manager):
         self._backend = backend
+        self._task_manager = task_manager
         backend.connect('formulae-loaded', self._on_packages_loaded)
         backend.connect('casks-loaded', self._on_packages_loaded)
+        backend.connect('outdated-changed', self._on_outdated_changed)
+        
+        # Configure UpdatesCard
+        self.updates_card.set_backend(backend)
+        self.updates_card.set_task_manager(task_manager)
+        self.updates_card.connect('package-history-requested', self._on_package_history_requested)
+
+    def _on_outdated_changed(self, backend, outdated_data):
+        count = len(outdated_data) if outdated_data else 0
+        self.updates_card.set_visible(bool(count > 0))
+        self.emit('outdated-count-changed', count)
+
+    def _on_package_history_requested(self, card, package):
+        """Open version history dialog for a package."""
+        from .version_history_dialog import PasarVersionHistoryDialog
+        
+        # We need access to the window's navigation view.
+        # This will emit a signal to the window handling it.
+        self.emit('package-history-requested', package)
 
     def _on_packages_loaded(self, backend, packages):
         self.refresh(backend)

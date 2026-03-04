@@ -33,7 +33,6 @@ class PasarWindow(Adw.ApplicationWindow):
     installed_page = Gtk.Template.Child()
     main_stack = Gtk.Template.Child()
     task_button = Gtk.Template.Child()
-    updates_button = Gtk.Template.Child()
     global_progress = Gtk.Template.Child()
     navigation_view = Gtk.Template.Child()
 
@@ -70,26 +69,20 @@ class PasarWindow(Adw.ApplicationWindow):
         # Task button in header bar
         self.task_button.connect('clicked', self._on_task_button_clicked)
 
-        # Updates button in header bar
-        self.updates_button.connect('clicked', self._on_updates_button_clicked)
         self._outdated_count = 0  # Track current outdated package count
         
-        # Create updates card (will be shown/hidden based on outdated packages)
-        self.updates_card = UpdatesCard()
-        self.updates_card.set_backend(self.backend)
-        self.updates_card.set_task_manager(self.task_manager)
-        self.updates_card.connect('package-history-requested', self._on_package_history_requested)
-
         # Wire pages to backend
         pages_start = time.perf_counter()
         self.browse_page.set_backend(self.backend)
         self.search_page.set_backend(self.backend)
-        self.installed_page.set_backend(self.backend)
+        self.installed_page.set_backend_and_manager(self.backend, self.task_manager)
 
         # Wire package open signal from pages
         self.browse_page.connect('package-activated', self._on_package_activated)
         self.search_page.connect('package-activated', self._on_package_activated)
         self.installed_page.connect('package-activated', self._on_package_activated)
+        self.installed_page.connect('package-history-requested', self._on_package_history_requested)
+        self.installed_page.connect('outdated-count-changed', self._on_outdated_count_changed)
 
         # Wire package install signals from inline tile buttons
         self.browse_page.connect('install-requested', self._on_install_requested)
@@ -241,32 +234,23 @@ class PasarWindow(Adw.ApplicationWindow):
     def _on_installed_loaded(self, backend, _):
         _log.debug('Installed-loaded signal received')
 
-    def _on_outdated_changed(self, backend, outdated_data):
-        """Handle backend's outdated-changed signal."""
-        _log.info('Outdated packages changed: %s', outdated_data)
+    def _on_outdated_count_changed(self, page, count):
+        """Update the Installed tab badge when the outdated count changes."""
+        installed_stack_page = self.main_stack.get_page(self.installed_page)
         
-        if not outdated_data:
-            self._outdated_count = 0
-            self.updates_button.set_label('0')
+        if count == 0:
+            installed_stack_page.set_badge_number(0)
+            installed_stack_page.set_needs_attention(False)
             return
-        
-        self._outdated_count = len(outdated_data)
-        self.updates_button.set_label(str(self._outdated_count))
+            
+        installed_stack_page.set_badge_number(count)
+        installed_stack_page.set_needs_attention(True)
         
         # Show toast notification
-        if self._outdated_count > 0:
-            msg = f'{self._outdated_count} package{"s" if self._outdated_count != 1 else ""} can be updated'
+        if count > 0:
+            msg = f'{count} package{"s" if count != 1 else ""} can be updated'
             toast = Adw.Toast.new(msg)
             self.toast_overlay.add_toast(toast)
-
-    def _on_updates_button_clicked(self, button):
-        """Handle updates button click."""
-        _log.debug('Updates button clicked, outdated count: %d', self._outdated_count)
-        if self._outdated_count > 0:
-            msg = f'{self._outdated_count} update{"s" if self._outdated_count != 1 else ""} available. Click Update All in the updates list.'
-            self.toast_overlay.add_toast(Adw.Toast.new(msg))
-        else:
-            self.toast_overlay.add_toast(Adw.Toast.new('No updates available'))
 
     def _on_backend_loading_changed(self, backend, _pspec):
         if backend.loading:
