@@ -375,6 +375,32 @@ template $PasarPackageDetails: Adw.NavigationPage {
                 }
               }
 
+              /* Other Versions section */
+              Box variants_bin {
+                orientation: vertical;
+                spacing: 8;
+                visible: false;
+                margin-top: 16;
+
+                Separator {}
+
+                Label {
+                  label: "Other Versions";
+                  xalign: 0.0;
+                  styles ["title-2"]
+                }
+
+                FlowBox variants_flow {
+                  homogeneous: true;
+                  min-children-per-line: 1;
+                  max-children-per-line: 3;
+                  column-spacing: 8;
+                  row-spacing: 8;
+                  margin-bottom: 20;
+                  selection-mode: none;
+                }
+              }
+
               /* Related Packages section */
               Box related_bin {
                 orientation: vertical;

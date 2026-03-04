@@ -10,11 +10,10 @@ from .backend import Package
 
 
 @Gtk.Template(resource_path='/dev/hanthor/Pasar/package-tile.ui')
-class PasarPackageTile(Gtk.Box):
+class PasarPackageTile(Gtk.Button):
     __gtype_name__ = 'PasarPackageTile'
     
     __gsignals__ = {
-        'clicked': (GObject.SignalFlags.RUN_LAST, None, ()),
         'install-requested': (GObject.SignalFlags.RUN_LAST, None, ()),
     }
 
@@ -28,11 +27,6 @@ class PasarPackageTile(Gtk.Box):
     def __init__(self, package=None, **kwargs):
         super().__init__(**kwargs)
         self._package = None
-        
-        # Click gesture for the whole tile
-        self._gesture = Gtk.GestureClick.new()
-        self._gesture.connect('released', self._on_gesture_released)
-        self.add_controller(self._gesture)
         
         self.install_button.connect('clicked', self._on_install_clicked)
         
@@ -89,15 +83,6 @@ class PasarPackageTile(Gtk.Box):
 
     def _on_install_clicked(self, button):
         self.emit('install-requested')
-
-    def _on_gesture_released(self, gesture, n_press, x, y):
-        # In GTK4, if the child button handled the click, it won't reach here 
-        # normally if we use BUBBLE phase. But to be safe, we can check if 
-        # the click was over the install button.
-        # However, a simpler way is to just emit 'clicked' and let the page handle it.
-        # If the user clicked the actual install button, that button's handler 
-        # will run first.
-        self.emit('clicked')
 
     def set_icon_pixbuf(self, pixbuf):
         """Update the tile icon from a GdkPixbuf (called from the main thread via GLib.idle_add)."""

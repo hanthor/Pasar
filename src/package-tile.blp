@@ -1,104 +1,106 @@
 using Gtk 4.0;
 
-template $PasarPackageTile: Box {
+template $PasarPackageTile: Button {
   focusable: true;
   can-target: true;
 
   styles [
     "card",
     "package-tile",
+    "flat",
   ]
 
-  orientation: horizontal;
-  spacing: 12;
-  margin-start: 12;
-  margin-end: 12;
-  margin-top: 12;
-  margin-bottom: 12;
-  width-request: 210;
-  valign: center;
-
-  /* Icon */
-  Box icon_box {
+  child: Box {
+    orientation: horizontal;
+    spacing: 12;
+    margin-start: 12;
+    margin-end: 12;
+    margin-top: 12;
+    margin-bottom: 12;
     valign: center;
-    width-request: 64;
-    margin-start: 8;
 
-    Image package_icon {
-      pixel-size: 48;
-      icon-name: "application-x-executable-symbolic";
+    /* Icon */
+    Box icon_box {
       valign: center;
-      halign: center;
+      width-request: 64;
+      margin-start: 8;
 
-      styles ["icon-dropshadow"]
+      Image package_icon {
+        pixel-size: 48;
+        icon-name: "application-x-executable-symbolic";
+        valign: center;
+        halign: center;
+
+        styles ["icon-dropshadow"]
+      }
     }
-  }
 
-  /* Text info */
-  Box {
-    orientation: vertical;
-    valign: center;
-    hexpand: true;
-    spacing: 3;
+    /* Text info */
+    Box {
+      orientation: vertical;
+      valign: center;
+      hexpand: true;
+      spacing: 3;
+
+      Box {
+        orientation: horizontal;
+        spacing: 6;
+
+        Label name_label {
+          xalign: 0.0;
+          ellipsize: end;
+          max-width-chars: 20;
+
+          styles ["heading"]
+        }
+
+        Label type_badge {
+          valign: center;
+
+          styles ["badge", "type-badge"]
+        }
+      }
+
+      Label desc_label {
+        xalign: 0.0;
+        yalign: 0.0;
+        wrap: true;
+        ellipsize: end;
+        lines: 2;
+        max-width-chars: 20;
+        single-line-mode: false;
+
+        styles ["dim-label", "caption"]
+      }
+
+      Box installed_row {
+        halign: start;
+        spacing: 4;
+        visible: false;
+
+        styles ["installed-pill"]
+
+        Image {
+          icon-name: "object-select-symbolic";
+          pixel-size: 12;
+        }
+
+        Label {
+          label: "Installed";
+        }
+      }
+    }
 
     Box {
-      orientation: horizontal;
-      spacing: 6;
+      valign: center;
+      margin-end: 12;
 
-      Label name_label {
-        xalign: 0.0;
-        ellipsize: end;
-        max-width-chars: 20;
-
-        styles ["heading"]
-      }
-
-      Label type_badge {
-        valign: center;
-
-        styles ["badge", "type-badge"]
+      Button install_button {
+        label: "Install";
+        visible: true;
+        
+        styles ["medium-pill"]
       }
     }
-
-    Label desc_label {
-      xalign: 0.0;
-      yalign: 0.0;
-      wrap: true;
-      ellipsize: end;
-      lines: 2;
-      max-width-chars: 20;
-      single-line-mode: false;
-
-      styles ["dim-label", "caption"]
-    }
-
-    Box installed_row {
-      halign: start;
-      spacing: 4;
-      visible: false;
-
-      styles ["installed-pill"]
-
-      Image {
-        icon-name: "object-select-symbolic";
-        pixel-size: 12;
-      }
-
-      Label {
-        label: "Installed";
-      }
-    }
-  }
-
-  Box {
-    valign: center;
-    margin-end: 12;
-
-    Button install_button {
-      label: "Install";
-      visible: true;
-      
-      styles ["medium-pill"]
-    }
-  }
+  };
 }

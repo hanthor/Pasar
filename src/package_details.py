@@ -60,6 +60,8 @@ class PasarPackageDetails(Adw.NavigationPage):
     readme_fade_overlay = Gtk.Template.Child()
     show_readme_button = Gtk.Template.Child()
     readme_webview = Gtk.Template.Child()
+    variants_bin = Gtk.Template.Child()
+    variants_flow = Gtk.Template.Child()
     related_bin = Gtk.Template.Child()
     related_flow = Gtk.Template.Child()
 
@@ -162,36 +164,51 @@ class PasarPackageDetails(Adw.NavigationPage):
         search_term = self._package.name.split('@')[0]
         results = self._backend.search(search_term)
         
-        # Filter out ANY version of the current package from the generic search results
-        filtered = []
+        # Categorize results into variants and related
+        variants = []
+        related = []
+        
         for p in results:
             if p.name == self._package.name or p.full_name == self._package.full_name:
                 continue
             
             p_base = p.name.split('@')[0]
             if p_base == search_term:
-                continue
+                variants.append(p)
+            else:
+                related.append(p)
+        
+        # Process Variants
+        if variants:
+            variants = variants[:3]
+            while child := self.variants_flow.get_first_child():
+                self.variants_flow.remove(child)
                 
-            filtered.append(p)
-        
-        if not filtered:
+            from .package_tile import PasarPackageTile
+            for pkg in variants:
+                tile = PasarPackageTile(package=pkg)
+                tile.connect('clicked', self._on_related_clicked)
+                tile.connect('install-requested', self._on_related_install_requested)
+                self.variants_flow.append(tile)
+            self.variants_bin.set_visible(True)
+        else:
+            self.variants_bin.set_visible(False)
+
+        # Process Related
+        if related:
+            related = related[:3]
+            while child := self.related_flow.get_first_child():
+                self.related_flow.remove(child)
+                
+            from .package_tile import PasarPackageTile
+            for pkg in related:
+                tile = PasarPackageTile(package=pkg)
+                tile.connect('clicked', self._on_related_clicked)
+                tile.connect('install-requested', self._on_related_install_requested)
+                self.related_flow.append(tile)
+            self.related_bin.set_visible(True)
+        else:
             self.related_bin.set_visible(False)
-            return
-            
-        filtered = filtered[:3]  # limit to top 3 related packages
-        
-        from .package_tile import PasarPackageTile
-        
-        while child := self.related_flow.get_first_child():
-            self.related_flow.remove(child)
-            
-        for pkg in filtered:
-            tile = PasarPackageTile(package=pkg)
-            tile.connect('clicked', self._on_related_clicked)
-            tile.connect('install-requested', self._on_related_install_requested)
-            self.related_flow.append(tile)
-            
-        self.related_bin.set_visible(True)
 
     def _on_related_clicked(self, tile):
         pkg = tile.get_package()
