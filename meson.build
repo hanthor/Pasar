@@ -15,7 +15,7 @@ py_installation = python.find_installation('python3')
 dependency('gtk4', version: '>= 4.12')
 dependency('libadwaita-1', version: '>= 1.4')
 
-APPLICATION_ID = 'dev.jamesq.Pasar'
+APPLICATION_ID = 'dev.hanthor.Pasar'
 PKGDATADIR = get_option('prefix') / get_option('datadir') / meson.project_name()
 
 conf = configuration_data()

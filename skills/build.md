@@ -24,7 +24,7 @@ The local development build targets Homebrew-installed GTK4 and Libadwaita. This
 - `builddir/` — Meson build directory (auto-created)
 - `~/.local/bin/pasar` — Installed executable script
 - `~/.local/share/pasar/` — UI resources (`.ui`, `.gresource`)
-- `~/.local/share/applications/dev.jamesq.Pasar.desktop` — Desktop entry
+- `~/.local/share/applications/dev.hanthor.Pasar.desktop` — Desktop entry
 
 ### Troubleshooting Local Builds
 
@@ -47,7 +47,7 @@ ln -s ../../Cellar/libadwaita/1.8.4/lib/girepository-1.0/Adw-1.typelib \
 
 ## Flatpak Development
 
-**Configuration:** `Justfile`, `dev.jamesq.Pasar.json`
+**Configuration:** `Justfile`, `dev.hanthor.Pasar.json`
 
 Flatpak provides isolated, reproducible builds suitable for distribution.
 
@@ -66,16 +66,16 @@ just clean              # Remove all artifacts
 2. **Create runtime:** Combines shared libraries and tools
 3. **Bundle:** Creates `.flatpak` installation bundle
 4. **Install:** Registers in user's Flatpak environment
-5. **Launch:** Via `flatpak run dev.jamesq.Pasar`
+5. **Launch:** Via `flatpak run dev.hanthor.Pasar`
 
 ### Build Directories & Artifacts
 - `.flatpak-build/` — Compilation workspace (can reach 5GB+)
 - `.flatpak-repo/` — Local package repository
 - `.flatpak-state/` — Build incremental cache
-- Installed: `~/.local/share/flatpak/app/dev.jamesq.Pasar/`
+- Installed: `~/.local/share/flatpak/app/dev.hanthor.Pasar/`
 
 ### Manifest
-**File:** `dev.jamesq.Pasar.json`
+**File:** `dev.hanthor.Pasar.json`
 
 Contains:
 - Runtime dependencies (GTK4, Libadwaita, Python)

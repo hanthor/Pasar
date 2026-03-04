@@ -1,3 +1,3 @@
 [D-BUS Service]
-Name=dev.jamesq.Pasar
+Name=dev.hanthor.Pasar
 Exec=@bindir@/pasar --gapplication-service

@@ -18,7 +18,7 @@ class PasarApplication(Adw.Application):
 
     def __init__(self, version='0.1.0', **kwargs):
         super().__init__(
-            application_id='dev.jamesq.Pasar',
+            application_id='dev.hanthor.Pasar',
             flags=Gio.ApplicationFlags.HANDLES_OPEN | Gio.ApplicationFlags.HANDLES_COMMAND_LINE | Gio.ApplicationFlags.NON_UNIQUE,
             **kwargs,
         )
@@ -89,7 +89,7 @@ class PasarApplication(Adw.Application):
         # Load CSS
         css_start = time.perf_counter()
         css_provider = Gtk.CssProvider()
-        css_provider.load_from_resource('/dev/jamesq/Pasar/style.css')
+        css_provider.load_from_resource('/dev/hanthor/Pasar/style.css')
         Gtk.StyleContext.add_provider_for_display(
             win.get_display(),
             css_provider,
@@ -128,7 +128,7 @@ class PasarApplication(Adw.Application):
     def _on_about_action(self, *args):
         about = Adw.AboutDialog(
             application_name='Pasar',
-            application_icon='dev.jamesq.Pasar',
+            application_icon='dev.hanthor.Pasar',
             developer_name='James',
             version=self.version,
             developers=['James'],

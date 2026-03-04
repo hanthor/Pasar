@@ -4,8 +4,12 @@
 import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
+gi.require_version('WebKit', '6.0')
 
-from gi.repository import Adw, Gtk, Gdk, Gio, GLib, GObject, Pango
+from gi.repository import Adw, Gtk, Gdk, Gio, GLib, GObject, Pango, WebKit
+import markdown
+
+GObject.type_ensure(WebKit.WebView)
 from .backend import Package, BrewBackend
 from .task_manager import Task, TaskStatus, TaskOperation
 from .logging_util import get_logger
@@ -15,7 +19,7 @@ from .screenshot_lightbox import PasarScreenshotLightbox
 _log = get_logger('package_details')
 
 
-@Gtk.Template(resource_path='/dev/jamesq/Pasar/package-details.ui')
+@Gtk.Template(resource_path='/dev/hanthor/Pasar/package-details.ui')
 class PasarPackageDetails(Adw.NavigationPage):
     __gtype_name__ = 'PasarPackageDetails'
 
@@ -46,10 +50,9 @@ class PasarPackageDetails(Adw.NavigationPage):
     screenshot_picture = Gtk.Template.Child()
     readme_bin = Gtk.Template.Child()
     readme_card_box = Gtk.Template.Child()
-    readme_scrolled = Gtk.Template.Child()
-    readme_view = Gtk.Template.Child()
-    read_more_button = Gtk.Template.Child()
-    debug_render_button = Gtk.Template.Child()
+    readme_stack = Gtk.Template.Child()
+    show_readme_button = Gtk.Template.Child()
+    readme_webview = Gtk.Template.Child()
     related_bin = Gtk.Template.Child()
     related_flow = Gtk.Template.Child()
 
@@ -59,17 +62,15 @@ class PasarPackageDetails(Adw.NavigationPage):
         self._backend = backend
         self._task_manager = task_manager
         self._task = None
+        self._hover_link = None
+        self._readme_text = None
 
         self.install_button.connect('clicked', self._on_install_clicked)
         self.remove_button.connect('clicked', self._on_remove_clicked)
         self.homepage_row.connect('activate', self._on_homepage_activated)
         self.screenshot_button.connect('clicked', self._on_screenshot_clicked)
-        self.read_more_button.connect('clicked', self._on_read_more_clicked)
-        self.debug_render_button.connect('clicked', self._on_debug_render_clicked)
-
-        ctrl = Gtk.EventControllerScroll.new(Gtk.EventControllerScrollFlags.VERTICAL)
-        ctrl.connect('scroll', self._on_readme_scroll)
-        self.readme_scrolled.add_controller(ctrl)
+        # No button connections needed for README (using blueprint callback)
+        self.readme_webview.connect('decide-policy', self._on_readme_decide_policy)
 
         # Set cursor for screenshot button
         self.screenshot_button.set_cursor(Gdk.Cursor.new_from_name('pointer', None))
@@ -83,6 +84,11 @@ class PasarPackageDetails(Adw.NavigationPage):
         _log = get_logger('package_details')
         
         self.set_title(package.display_name or package.name)
+        self.readme_bin.set_visible(False)
+        self.readme_stack.set_visible_child_name('button')
+        self.readme_webview.set_property('height-request', 20)
+        self._readme_text = None
+        
         self.detail_name.set_label(package.name)
         self.detail_desc.set_label(package.description or 'No description available.')
         _log.debug('Setting description: %s', package.description[:50] if package.description else 'None')
@@ -212,261 +218,113 @@ class PasarPackageDetails(Adw.NavigationPage):
     def _on_readme_fetched(self, package, text):
         if not text or package != self._package:
             return
-        try:
-            self._render_readme(text)
-            self.readme_bin.set_visible(True)
-        except Exception as e:
-            _log.warning('README render error for %s: %s', package.name, e)
+        self._readme_text = text
+        self.readme_bin.set_visible(True)
+
+    @Gtk.Template.Callback()
+    def on_show_readme_clicked(self, *args):
+        if self._readme_text:
+            _log.debug('On-demand README loading triggered')
+            self.readme_webview.set_property('height-request', 400)
+            self._render_readme(self._readme_text)
+            self.readme_stack.set_visible_child_name('webview')
 
     def _render_readme(self, text):
-        """Render Markdown text into the readme_view TextBuffer using TextTags."""
-        import re
-        buf = self.readme_view.get_buffer()
-        buf.set_text('')
+        """Render Markdown text into the readme_webview using the markdown library."""
+        try:
+            # Convert Markdown to HTML
+            html_content = markdown.markdown(text, extensions=['extra', 'nl2br', 'sane_lists'])
+            
+            # Basic CSS to match the app style
+            # We'll try to guess if we're in dark mode or light mode
+            # In a real app we'd query the theme, but for now we'll use system-ui defaults
+            # and generic colors that look okay.
+            
+            style = """
+            <style>
+                :root {
+                    color-scheme: light dark;
+                }
+                body {
+                    font-family: system-ui, -apple-system, sans-serif;
+                    line-height: 1.5;
+                    color: CanvasText;
+                    background-color: transparent;
+                    margin: 20px;
+                    font-size: 14px;
+                    overflow-x: hidden; /* Prevent horizontal scroll on body */
+                }
+                img {
+                    max-width: 100%;
+                    height: auto;
+                    display: block;
+                    margin: 10px 0;
+                }
+                pre {
+                    background-color: rgba(0,0,0,0.1);
+                    padding: 10px;
+                    border-radius: 6px;
+                    overflow-x: auto;
+                    font-family: monospace;
+                    max-width: 100%;
+                }
+                code {
+                    background-color: rgba(0,0,0,0.1);
+                    padding: 2px 4px;
+                    border-radius: 4px;
+                    font-family: monospace;
+                    word-break: break-all;
+                }
+                a {
+                    color: #3584e4;
+                    text-decoration: underline;
+                }
+                h1, h2, h3 { margin-top: 1.5em; margin-bottom: 0.5em; }
+                blockquote {
+                    border-left: 4px solid #ccc;
+                    padding-left: 16px;
+                    margin-left: 0;
+                    color: #666;
+                }
+                table { 
+                    border-collapse: collapse; 
+                    width: 100%; 
+                    max-width: 100%;
+                    display: block;
+                    overflow-x: auto;
+                    margin: 16px 0;
+                }
+                th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+                th { background-color: rgba(0,0,0,0.05); }
+            </style>
+            """
+            
+            # Wrap in full HTML document
+            full_html = f"<html><head>{style}</head><body>{html_content}</body></html>"
+            
+            # Load into WebKit
+            # Map transparent background
+            self.readme_webview.set_background_color(Gdk.RGBA())
+            self.readme_webview.load_html(full_html, None)
+            
+        except Exception as e:
+            _log.warning('README render error for %s: %s', self._package.name, e)
 
-        # ── Text tags ─────────────────────────────────────────────────────────
-        tag_table = buf.get_tag_table()
-
-        def ensure_tag(name, **props):
-            t = tag_table.lookup(name)
-            if t is None:
-                t = buf.create_tag(name, **props)
-            return t
-
-        ensure_tag('h1', weight=700, scale=1.5, pixels_above_lines=10, pixels_below_lines=4)
-        ensure_tag('h2', weight=700, scale=1.25, pixels_above_lines=8, pixels_below_lines=3)
-        ensure_tag('h3', weight=700, scale=1.1, pixels_above_lines=6, pixels_below_lines=2)
-        ensure_tag('bold', weight=700)
-        ensure_tag('italic', style=2)   # Pango.Style.ITALIC
-        ensure_tag('code', family='Monospace', scale=0.9)
-        ensure_tag('blockquote', foreground='gray', left_margin=16)
-
-        # ── Pre-processing ────────────────────────────────────────────────────
-        # Strip HTML comments
-        text = re.sub(r'<!--.*?-->', '', text, flags=re.DOTALL)
-
-        # Strip linked images: [![alt](img)](url)  — must be done BEFORE plain images
-        text = re.sub(r'\[!\[[^\]]*\]\([^)]*\)\]\([^)]*\)', '', text)
-
-        # Strip plain images: ![alt](url) and ![alt][ref]
-        text = re.sub(r'!\[[^\]]*\]\([^)]*\)', '', text)
-        text = re.sub(r'!\[[^\]]*\]\[[^\]]*\]', '', text)
-
-        # Strip HTML img tags
-        text = re.sub(r'<img\s[^>]*/?>','', text, flags=re.IGNORECASE)
-
-        # Strip other HTML block tags we can't render (details/summary/div etc.)
-        text = re.sub(r'</?(?:details|summary|div|span|p|br|hr|table|thead|tbody|tr|td|th)[^>]*>', '', text, flags=re.IGNORECASE)
-
-        # Collapse lines that are now blank
-        text = re.sub(r'\n[ \t]*\n[ \t]*\n', '\n\n', text)
-        
-        _log.debug('Rendering README, length: %d chars', len(text))
-
-        # ── Append helper ─────────────────────────────────────────────────────
-        it = buf.get_end_iter()
-
-        def append(s, tag_name=None):
-            it = buf.get_end_iter()
-            if tag_name:
-                buf.insert_with_tags_by_name(it, s, tag_name)
-            else:
-                buf.insert(it, s)
-
-        def render_inline(line, default_tag=None):
-            """Render a line with inline bold/italic/code tags."""
-            segments = re.split(r'(\*\*[^*\n]+\*\*|\*[^*\n]+\*|_[^_\n]+_|`[^`\n]+`)', line)
-            for seg in segments:
-                if not seg:
-                    continue
-                if seg.startswith('**') and seg.endswith('**') and len(seg) > 4:
-                    append(seg[2:-2], 'bold')
-                elif len(seg) > 2 and ((seg.startswith('*') and seg.endswith('*')) or
-                                        (seg.startswith('_') and seg.endswith('_'))):
-                    append(seg[1:-1], 'italic')
-                elif seg.startswith('`') and seg.endswith('`') and len(seg) > 2:
-                    append(seg[1:-1], 'code')
-                else:
-                    # Strip markdown links: [text](url) → text
-                    clean = re.sub(r'\[([^\]]+)\]\([^)]*\)', r'\1', seg)
-                    # Strip reference links: [text][ref] → text
-                    clean = re.sub(r'\[([^\]]+)\]\[[^\]]*\]', r'\1', clean)
-                    append(clean, default_tag)
-
-        # ── Line-by-line rendering ─────────────────────────────────────────────
-        in_code_block = False
-        lines = text.splitlines()
-        i = 0
-        while i < len(lines):
-            line = lines[i]
-
-            # Fenced code blocks
-            if line.startswith('```') or line.startswith('~~~'):
-                in_code_block = not in_code_block
-                if not in_code_block:
-                    append('\n')
-                i += 1
-                continue
-
-            if in_code_block:
-                append(line + '\n', 'code')
-                i += 1
-                continue
-
-            # Setext headings (underlined with === or ---)
-            if i + 1 < len(lines):
-                next_line = lines[i + 1]
-                if re.match(r'^=+\s*$', next_line) and line.strip():
-                    append(re.sub(r'[`*_]', '', line.strip()) + '\n', 'h1')
-                    i += 2
-                    continue
-                if re.match(r'^-+\s*$', next_line) and line.strip():
-                    append(re.sub(r'[`*_]', '', line.strip()) + '\n', 'h2')
-                    i += 2
-                    continue
-
-            # ATX headings: # ## ###
-            h = re.match(r'^(#{1,3})\s+(.*)', line)
-            if h:
-                level = len(h.group(1))
-                heading_text = re.sub(r'[`*_]|#+\s*$', '', h.group(2)).strip()
-                append(heading_text + '\n', f'h{level}')
-                i += 1
-                continue
-
-            # Horizontal rules → blank line
-            if re.match(r'^[-*_]{3,}\s*$', line):
-                append('\n')
-                i += 1
-                continue
-
-            # Skip remaining HTML tags on their own line
-            if re.match(r'^\s*<[^>]+>\s*$', line):
-                i += 1
-                continue
-
-            # Blockquote lines
-            bq = re.match(r'^>\s?(.*)', line)
-            if bq:
-                render_inline(bq.group(1), 'blockquote')
-                append('\n')
-                i += 1
-                continue
-
-            # Bullet list items
-            bullet = re.match(r'^(\s*)[-*+]\s+(.*)', line)
-            if bullet:
-                indent = bullet.group(1)
-                rest = bullet.group(2)
-                append(indent + '• ')
-                render_inline(rest)
-                append('\n')
-                i += 1
-                continue
-
-            # Numbered list items
-            numbered = re.match(r'^(\s*)\d+\.\s+(.*)', line)
-            if numbered:
-                indent = numbered.group(1)
-                rest = numbered.group(2)
-                append(indent)
-                render_inline(rest)
-                append('\n')
-                i += 1
-                continue
-
-            # Blank line
-            if not line.strip():
-                append('\n')
-                i += 1
-                continue
-
-            # Normal paragraph text
-            append(line + '\n')
-            i += 1
-
-        # Check if we should show "Read More"
-        GLib.idle_add(self._check_readme_height)
-
-    def _check_readme_height(self):
-        # Allow natural height calculation to pick up the content size
-        self.readme_view.queue_resize()
-        
-        adj = self.readme_view.get_vadjustment()
-        upper = adj.get_upper()
-        _log.debug('README upper: %s', upper)
-        
-        if upper > 0:
-            if upper > 310: # If content is larger than our truncation threshold
-                self.readme_scrolled.set_max_content_height(300)
-                self.read_more_button.set_visible(True)
-            else:
-                self.readme_scrolled.set_max_content_height(10000) # Show all
-                self.read_more_button.set_visible(False)
-        else:
-            # If still 0, maybe the text hasn't rendered yet, try again soon
-            GLib.timeout_add(100, self._check_readme_height)
-
-    def _on_readme_scroll(self, controller, dx, dy):
-        if self.read_more_button.get_label() == 'Read More':
-            return True # Consume default scrolling when collapsed
+    def _on_readme_decide_policy(self, webview, decision, type):
+        if type == WebKit.PolicyDecisionType.NAVIGATION_ACTION:
+            action = decision.get_navigation_action()
+            req = action.get_request()
+            uri = req.get_uri()
+            
+            if uri and not uri.startswith('about:'):
+                decision.ignore()
+                _log.info('Opening README link externally: %s', uri)
+                launcher = Gtk.UriLauncher.new(uri)
+                launcher.launch(self.get_root(), None, None, None)
+                return True
         return False
 
-    def _on_read_more_clicked(self, button):
-        if self.read_more_button.get_label() == 'Read More':
-            # Expand: set a very large height limit so it grows to show all text
-            self.readme_scrolled.set_max_content_height(10000)
-            self.read_more_button.set_label('Show Less')
-            self.readme_card_box.add_css_class('expanded')
-            from gi.repository import Gtk
-            self.read_more_button.set_halign(Gtk.Align.FILL)
-            self.read_more_button.remove_css_class('pill')
-        else:
-            # Truncate: back to 300px
-            self.readme_scrolled.set_max_content_height(300)
-            self.read_more_button.set_label('Read More')
-            self.readme_card_box.remove_css_class('expanded')
-            from gi.repository import Gtk
-            self.read_more_button.set_halign(Gtk.Align.CENTER)
-            self.read_more_button.add_css_class('pill')
-            
-        # Ensure the layout updates
-        self.readme_scrolled.queue_resize()
-
-    def _on_debug_render_clicked(self, button):
-        # Show a dialog with the "debug" info about the rendered buffer
-        buf = self.readme_view.get_buffer()
-        text = buf.get_text(buf.get_start_iter(), buf.get_end_iter(), True)
-        
-        # Count tags
-        tag_stats = {}
-        it = buf.get_start_iter()
-        while not it.is_end():
-            tags = it.get_tags()
-            for t in tags:
-                name = t.get_property('name') or 'unnamed'
-                tag_stats[name] = tag_stats.get(name, 0) + 1
-            it.forward_char()
-
-        stats_str = "\n".join([f"{name}: {count} chars" for name, count in tag_stats.items()])
-        
-        from .logging_util import get_logger
-        _log = get_logger('package_details')
-        _log.debug('README Debug Info:\n%s', stats_str)
-
-        msg = f"<b>Render Stats:</b>\n{stats_str}\n\n<b>Raw Text:</b>\n{text[:500]}..."
-        
-        dialog = Adw.MessageDialog.new(
-            self.get_root(),
-            "README Render Debug",
-            ""
-        )
-        dialog.set_body_use_markup(True)
-        dialog.set_body(msg)
-        dialog.add_response("close", "Close")
-        dialog.set_default_response("close")
-        dialog.set_close_response("close")
-        dialog.present()
+    # Removed Read More and Debug button handlers
 
 
 

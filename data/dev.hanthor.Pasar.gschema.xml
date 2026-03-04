@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist gettext-domain="pasar">
-  <schema id="dev.jamesq.Pasar" path="/dev/jamesq/Pasar/">
+  <schema id="dev.hanthor.Pasar" path="/dev/hanthor/Pasar/">
     <key name="window-width" type="i">
       <default>1100</default>
       <summary>Window width</summary>

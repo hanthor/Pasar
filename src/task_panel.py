@@ -133,7 +133,7 @@ class PasarTaskRow(Gtk.ListBoxRow):
             self.set_tooltip_text(None)
 
 
-@Gtk.Template(resource_path='/dev/jamesq/Pasar/task-panel.ui')
+@Gtk.Template(resource_path='/dev/hanthor/Pasar/task-panel.ui')
 class PasarTaskPanel(Adw.Dialog):
     """Dialog that displays all active and recent tasks with progress."""
 

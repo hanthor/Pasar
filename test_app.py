@@ -4,7 +4,7 @@ from gi.repository import Gtk, Gio, GLib
 
 class App(Gtk.Application):
     def __init__(self):
-        super().__init__(application_id='dev.jamesq.TestApp', flags=Gio.ApplicationFlags.FLAGS_NONE)
+        super().__init__(application_id='dev.hanthor.TestApp', flags=Gio.ApplicationFlags.FLAGS_NONE)
         # self.connect('dbus-register', self.on_dbus_register)
         
     def do_dbus_register(self, connection, object_path):

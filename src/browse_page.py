@@ -28,7 +28,7 @@ POPULAR_CASKS = [
 ]
 
 
-@Gtk.Template(resource_path='/dev/jamesq/Pasar/browse-page.ui')
+@Gtk.Template(resource_path='/dev/hanthor/Pasar/browse-page.ui')
 class PasarBrowsePage(Adw.Bin):
     __gtype_name__ = 'PasarBrowsePage'
 

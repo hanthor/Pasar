@@ -1,6 +1,6 @@
 from gi.repository import Gtk, GObject, Adw
 
-@Gtk.Template(resource_path='/dev/jamesq/Pasar/package-rich-tile.ui')
+@Gtk.Template(resource_path='/dev/hanthor/Pasar/package-rich-tile.ui')
 class PasarRichPackageTile(Gtk.Box):
     __gtype_name__ = 'PasarRichPackageTile'
 

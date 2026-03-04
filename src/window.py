@@ -23,7 +23,7 @@ from .updates_card import UpdatesCard  # noqa: F401
 from .version_history_dialog import PasarVersionHistoryDialog  # noqa: F401
 
 
-@Gtk.Template(resource_path='/dev/jamesq/Pasar/window.ui')
+@Gtk.Template(resource_path='/dev/hanthor/Pasar/window.ui')
 class PasarWindow(Adw.ApplicationWindow):
     __gtype_name__ = 'PasarWindow'
 
@@ -106,7 +106,7 @@ class PasarWindow(Adw.ApplicationWindow):
 
         # Settings for size persistence
         settings_start = time.perf_counter()
-        self._settings = Gio.Settings.new('dev.jamesq.Pasar')
+        self._settings = Gio.Settings.new('dev.hanthor.Pasar')
         self.set_default_size(
             self._settings.get_int('window-width'),
             self._settings.get_int('window-height'),

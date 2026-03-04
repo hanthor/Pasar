@@ -14,7 +14,7 @@ from .logging_util import get_logger
 _log = get_logger('installed_page')
 
 
-@Gtk.Template(resource_path='/dev/jamesq/Pasar/installed-page.ui')
+@Gtk.Template(resource_path='/dev/hanthor/Pasar/installed-page.ui')
 class PasarInstalledPage(Adw.Bin):
     __gtype_name__ = 'PasarInstalledPage'
 

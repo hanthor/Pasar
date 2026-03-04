@@ -514,7 +514,7 @@ class BrewBackend(GObject.Object):
 
         # Check for outdated packages if setting is enabled
         try:
-            settings = Gio.Settings.new('dev.jamesq.Pasar')
+            settings = Gio.Settings.new('dev.hanthor.Pasar')
             if settings.get_boolean('outdated-check-enabled'):
                 self._check_outdated()
         except Exception as e:

@@ -9,7 +9,7 @@ from gi.repository import Adw, Gtk, GObject
 from .backend import Package
 
 
-@Gtk.Template(resource_path='/dev/jamesq/Pasar/package-tile.ui')
+@Gtk.Template(resource_path='/dev/hanthor/Pasar/package-tile.ui')
 class PasarPackageTile(Gtk.Box):
     __gtype_name__ = 'PasarPackageTile'
     

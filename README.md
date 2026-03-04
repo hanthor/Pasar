@@ -35,7 +35,7 @@ brew install gtk4 libadwaita meson ninja pygobject3 gettext desktop-file-utils b
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/jamesq/pasar.git
+   git clone https://github.com/hanthor/pasar.git
    cd pasar
    ```
 
@@ -77,7 +77,7 @@ Or just grab the zip directly: [pasar.flatpak.zip](https://nightly.link/hanthor/
 ### Build from source
 
 ```bash
-flatpak-builder --force-clean --user --install flatpak-build dev.jamesq.Pasar.json
+flatpak-builder --force-clean --user --install flatpak-build dev.hanthor.Pasar.json
 ```
 
 ## 🤝 Contributing

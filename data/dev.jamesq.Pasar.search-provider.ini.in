@@ -1,5 +1,0 @@
-[Shell Search Provider]
-DesktopId=dev.jamesq.Pasar.desktop
-BusName=dev.jamesq.Pasar
-ObjectPath=/dev/jamesq/Pasar/SearchProvider
-Version=2

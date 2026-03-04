@@ -13,7 +13,7 @@ from .logging_util import get_logger
 _log = get_logger('search_page')
 
 
-@Gtk.Template(resource_path='/dev/jamesq/Pasar/search-page.ui')
+@Gtk.Template(resource_path='/dev/hanthor/Pasar/search-page.ui')
 class PasarSearchPage(Adw.Bin):
     __gtype_name__ = 'PasarSearchPage'
 

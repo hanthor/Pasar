@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>dev.jamesq.Pasar</id>
+  <id>dev.hanthor.Pasar</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
   <name>Pasar</name>
@@ -11,7 +11,7 @@
       install, and remove both formulae and casks with a beautiful GNOME interface.
     </p>
   </description>
-  <url type="homepage">https://github.com/jamesq/pasar</url>
+  <url type="homepage">https://github.com/hanthor/pasar</url>
   <content_rating type="oars-1.1" />
   <releases>
     <release version="0.1.0" date="2026-02-28">

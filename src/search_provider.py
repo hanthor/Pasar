@@ -66,7 +66,7 @@ class PasarSearchProvider:
         self.connection = connection
         try:
             self.registration_id = self.connection.register_object(
-                "/dev/jamesq/Pasar/SearchProvider",
+                "/dev/hanthor/Pasar/SearchProvider",
                 self._interface_info,
                 self._handle_method_call,
                 None,  # get_property
@@ -165,7 +165,7 @@ class PasarSearchProvider:
                 }
                 
                 # Assign default icon based on package type
-                icon_name = "dev.jamesq.Pasar-symbolic" # Default
+                icon_name = "dev.hanthor.Pasar-symbolic" # Default
                 meta["icon"] = Gio.Icon.new_for_string(icon_name).serialize()
                 
                 metas.append(meta)

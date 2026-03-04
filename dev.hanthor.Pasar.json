@@ -1,5 +1,5 @@
 {
-    "app-id": "dev.jamesq.Pasar",
+    "app-id": "dev.hanthor.Pasar",
     "runtime": "org.gnome.Platform",
     "runtime-version": "49",
     "sdk": "org.gnome.Sdk",
@@ -14,7 +14,7 @@
         "--filesystem=home",
         "--filesystem=/home/linuxbrew:ro",
         "--env=HOMEBREW_NO_AUTO_UPDATE=1",
-        "--own-name=dev.jamesq.Pasar.SearchProvider"
+        "--own-name=dev.hanthor.Pasar.SearchProvider"
     ],
     "cleanup": [
         "/include",
@@ -34,6 +34,20 @@
                     "type": "git",
                     "url": "https://gitlab.gnome.org/jwestman/blueprint-compiler.git",
                     "tag": "v0.16.0"
+                }
+            ]
+        },
+        {
+            "name": "python3-markdown",
+            "buildsystem": "simple",
+            "build-commands": [
+                "pip3 install --prefix=/app markdown"
+            ],
+            "sources": [
+                {
+                    "type": "inline",
+                    "contents": "",
+                    "dest-filename": "dummy"
                 }
             ]
         },

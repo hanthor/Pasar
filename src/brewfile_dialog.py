@@ -12,7 +12,7 @@ from .logging_util import get_logger
 _log = get_logger('brewfile_dialog')
 
 
-@Gtk.Template(resource_path='/dev/jamesq/Pasar/brewfile-dialog.ui')
+@Gtk.Template(resource_path='/dev/hanthor/Pasar/brewfile-dialog.ui')
 class PasarBrewfileDialog(Adw.Window):
     __gtype_name__ = 'PasarBrewfileDialog'
 

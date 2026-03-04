@@ -26,7 +26,7 @@ flatpak-INFO: 11:14:43.542: Opening system flatpak installation at path /var/lib
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.543: 	filesystems=home;/home/linuxbrew:ro;
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.543: 	[Session Bus Policy]
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.543: 	org.freedesktop.Flatpak=talk
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.543: 	dev.jamesq.Pasar.SearchProvider=own
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.543: 	dev.hanthor.Pasar.SearchProvider=own
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.543: 	[Environment]
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.543: 	ALSA_CONFIG_PATH=/usr/share/alsa/alsa-flatpak.conf
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.543: 	GI_TYPELIB_PATH=/app/lib/girepository-1.0
@@ -53,7 +53,7 @@ flatpak-INFO: 11:14:43.542: Opening system flatpak installation at path /var/lib
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.543: 	filesystems=home;/home/linuxbrew:ro;
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.543: 	[Session Bus Policy]
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.543: 	org.freedesktop.Flatpak=talk
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.543: 	dev.jamesq.Pasar.SearchProvider=own
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.543: 	dev.hanthor.Pasar.SearchProvider=own
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.543: 	[Environment]
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.543: 	ALSA_CONFIG_PATH=/usr/share/alsa/alsa-flatpak.conf
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.543: 	GI_TYPELIB_PATH=/app/lib/girepository-1.0
@@ -69,8 +69,8 @@ flatpak-INFO: 11:14:43.558: /var/lib/flatpak/runtime/org.gnome.Platform/x86_64/4
 flatpak-INFO: 11:14:43.562: Cleaning up unused container id 857386954
 flatpak-INFO: 11:14:43.562: Cleaning up per-app-ID state for org.gnome.NautilusPreviewer
 flatpak-INFO: 11:14:43.563: Allocated instance id 2451674570
-flatpak-INFO: 11:14:43.563: Add defaults in dir /dev/jamesq/Pasar/
-flatpak-INFO: 11:14:43.565: Add locks in dir /dev/jamesq/Pasar/
+flatpak-INFO: 11:14:43.563: Add defaults in dir /dev/hanthor/Pasar/
+flatpak-INFO: 11:14:43.565: Add locks in dir /dev/hanthor/Pasar/
 flatpak-INFO: 11:14:43.566: Allowing dri access
 flatpak-INFO: 11:14:43.566: Allowing homedir access
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.566: Trying to export read/write: /var/home/james
@@ -94,14 +94,14 @@ flatpak-INFO: 11:14:43.566: Allowing homedir access
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.567: /var/home/james/.var is not a symlink
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.567: /var/home/james/.var/app is not a symlink
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.567: Will replace with tmpfs: /var/home/james/.var/app
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.567: Trying to export read/write: /var/home/james/.var/app/dev.jamesq.Pasar
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.567: Trying to export read/write: /var/home/james/.var/app/dev.hanthor.Pasar
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.567: /var is not a symlink
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.567: /var/home is not a symlink
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.567: /var/home/james is not a symlink
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.567: /var/home/james/.var is not a symlink
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.567: /var/home/james/.var/app is not a symlink
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.567: /var/home/james/.var/app/dev.jamesq.Pasar is not a symlink
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.567: Will export read/write: /var/home/james/.var/app/dev.jamesq.Pasar
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.567: /var/home/james/.var/app/dev.hanthor.Pasar is not a symlink
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.567: Will export read/write: /var/home/james/.var/app/dev.hanthor.Pasar
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.567: Trying to replace with tmpfs: /var/home/james/.local/share/flatpak
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.567: /var is not a symlink
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.567: /var/home is not a symlink
@@ -124,7 +124,7 @@ flatpak-INFO: 11:14:43.566: Allowing homedir access
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.567: Parent of "/var/home/james/.local/share/flatpak" is mapped, creating tmpfs to shadow it
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.567: "/var/home/james/.var/app" is meant to be a tmpfs or empty directory
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.567: Parent of "/var/home/james/.var/app" is mapped, creating tmpfs to shadow it
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.567: "/var/home/james/.var/app/dev.jamesq.Pasar" is meant to be shared (ro or rw) with the container
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.567: "/var/home/james/.var/app/dev.hanthor.Pasar" is meant to be shared (ro or rw) with the container
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.567: "/var/home/linuxbrew" is meant to be shared (ro or rw) with the container
 flatpak-INFO: 11:14:43.567: Allowing wayland access
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.567: Wayland display does not support security_context_manager_v1
@@ -206,10 +206,10 @@ flatpak-INFO: 11:14:43.567: Allowing wayland access
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.612:     unix:path=/run/user/1000/bus
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.612:     /run/user/1000/.dbus-proxy/session-bus-proxy-WEAXL3
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.612:     --filter
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.612:     '--own=dev.jamesq.Pasar.*'
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.612:     '--own=org.mpris.MediaPlayer2.dev.jamesq.Pasar.*'
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.612:     '--own=dev.hanthor.Pasar.*'
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.612:     '--own=org.mpris.MediaPlayer2.dev.hanthor.Pasar.*'
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.612:     --talk=org.freedesktop.Flatpak
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.612:     --own=dev.jamesq.Pasar.SearchProvider
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.612:     --own=dev.hanthor.Pasar.SearchProvider
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.612:     '--call=org.freedesktop.portal.*=*'
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.612:     '--broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/*'
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.612:     unix:path=/run/user/1000/at-spi/bus
@@ -226,7 +226,7 @@ flatpak-INFO: 11:14:43.567: Allowing wayland access
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.612:     --call=org.a11y.atspi.Registry=org.a11y.atspi.DeviceEventController.NotifyListenersSync@/org/a11y/atspi/registry/deviceeventcontroller
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.612:     --call=org.a11y.atspi.Registry=org.a11y.atspi.DeviceEventController.NotifyListenersAsync@/org/a11y/atspi/registry/deviceeventcontroller
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.612:     --filter
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.612:     '--call=dev.jamesq.Pasar.Sandboxed.*=org.a11y.atspi.Socket.Embedded'
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.612:     '--call=dev.hanthor.Pasar.Sandboxed.*=org.a11y.atspi.Socket.Embedded'
 flatpak-INFO: 11:14:43.612: Running '/usr/bin/bwrap --args 36 -- /usr/bin/xdg-dbus-proxy --args=42'
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.622: bwrap --args 40 = ...
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.623:     --ro-bind
@@ -235,7 +235,7 @@ flatpak-INFO: 11:14:43.612: Running '/usr/bin/bwrap --args 36 -- /usr/bin/xdg-db
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.623:     --lock-file
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.623:     /usr/.ref
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.623:     --ro-bind
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.623:     /var/home/james/.local/share/flatpak/app/dev.jamesq.Pasar/x86_64/master/08d9bac83988b95e44bdb05071a3a174cc29db1c72f30bb2551f3104313b6497/files
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.623:     /var/home/james/.local/share/flatpak/app/dev.hanthor.Pasar/x86_64/master/08d9bac83988b95e44bdb05071a3a174cc29db1c72f30bb2551f3104313b6497/files
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.623:     /app
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.623:     --lock-file
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.623:     /app/.ref
@@ -634,16 +634,16 @@ flatpak-INFO: 11:14:43.612: Running '/usr/bin/bwrap --args 36 -- /usr/bin/xdg-db
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.625:     /var/lib/flatpak/runtime/org.gnome.Platform/x86_64/49/c97a19249ae151244a123538628d10aa41ddce6f2af64d8b3c010838a3e9ccaf/files/etc/xdg
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.625:     /etc/xdg
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.625:     --bind
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.625:     /var/home/james/.var/app/dev.jamesq.Pasar/cache
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.625:     /var/home/james/.var/app/dev.hanthor.Pasar/cache
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.625:     /var/cache
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.625:     --bind
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.625:     /var/home/james/.var/app/dev.jamesq.Pasar/data
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.625:     /var/home/james/.var/app/dev.hanthor.Pasar/data
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.625:     /var/data
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.625:     --bind
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.625:     /var/home/james/.var/app/dev.jamesq.Pasar/config
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.625:     /var/home/james/.var/app/dev.hanthor.Pasar/config
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.625:     /var/config
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.625:     --bind
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.625:     /var/home/james/.var/app/dev.jamesq.Pasar/cache/tmp
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.625:     /var/home/james/.var/app/dev.hanthor.Pasar/cache/tmp
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.625:     /var/tmp
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.625:     --symlink
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     usr/bin
@@ -717,10 +717,10 @@ flatpak-INFO: 11:14:43.612: Running '/usr/bin/bwrap --args 36 -- /usr/bin/xdg-db
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     --info-fd
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     34
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     --bind
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /run/user/1000/.flatpak/dev.jamesq.Pasar/xdg-run
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /run/user/1000/.flatpak/dev.hanthor.Pasar/xdg-run
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /run/user/1000
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     --bind
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /run/user/1000/doc/by-app/dev.jamesq.Pasar
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /run/user/1000/doc/by-app/dev.hanthor.Pasar
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /run/flatpak/doc
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     --dev
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /dev
@@ -728,11 +728,11 @@ flatpak-INFO: 11:14:43.612: Running '/usr/bin/bwrap --args 36 -- /usr/bin/xdg-db
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /dev/dri
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /dev/dri
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     --bind
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /run/user/1000/.flatpak/dev.jamesq.Pasar/tmp
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /run/user/1000/.flatpak/dev.hanthor.Pasar/tmp
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /tmp
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     --bind
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /run/user/1000/app/dev.jamesq.Pasar
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /run/flatpak/app/dev.jamesq.Pasar
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /run/user/1000/app/dev.hanthor.Pasar
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /run/flatpak/app/dev.hanthor.Pasar
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     --symlink
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     var/home
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /home
@@ -744,8 +744,8 @@ flatpak-INFO: 11:14:43.612: Running '/usr/bin/bwrap --args 36 -- /usr/bin/xdg-db
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     --tmpfs
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /var/home/james/.var/app
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     --bind
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /var/home/james/.var/app/dev.jamesq.Pasar
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /var/home/james/.var/app/dev.jamesq.Pasar
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /var/home/james/.var/app/dev.hanthor.Pasar
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /var/home/james/.var/app/dev.hanthor.Pasar
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     --ro-bind
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /var/home/linuxbrew
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /var/home/linuxbrew
@@ -754,7 +754,7 @@ flatpak-INFO: 11:14:43.612: Running '/usr/bin/bwrap --args 36 -- /usr/bin/xdg-db
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /run/host/os-release
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     --ro-bind
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /var/home/james/.config/user-dirs.dirs
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /var/home/james/.var/app/dev.jamesq.Pasar/config/user-dirs.dirs
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /var/home/james/.var/app/dev.hanthor.Pasar/config/user-dirs.dirs
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     --ro-bind
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /run/user/1000/wayland-0
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /run/flatpak/wayland-0
@@ -769,7 +769,7 @@ flatpak-INFO: 11:14:43.612: Running '/usr/bin/bwrap --args 36 -- /usr/bin/xdg-db
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     --sync-fd
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     39
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     --ro-bind
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /run/user/1000/.flatpak/dev.jamesq.Pasar/.ref
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /run/user/1000/.flatpak/dev.hanthor.Pasar/.ref
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /run/flatpak/per-app-dirs-ref
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     --lock-file
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.626:     /run/flatpak/per-app-dirs-ref
@@ -850,10 +850,10 @@ flatpak-INFO: 11:14:43.612: Running '/usr/bin/bwrap --args 36 -- /usr/bin/xdg-db
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.627:     1
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.627:     --setenv
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.627:     FLATPAK_ID
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.627:     dev.jamesq.Pasar
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.627:     dev.hanthor.Pasar
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.627:     --setenv
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.627:     FLATPAK_SANDBOX_DIR
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.627:     /var/home/james/.var/app/dev.jamesq.Pasar/sandbox
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.627:     /var/home/james/.var/app/dev.hanthor.Pasar/sandbox
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.627:     --setenv
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.627:     GDMSESSION
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.627:     gnome
@@ -1024,13 +1024,13 @@ flatpak-INFO: 11:14:43.612: Running '/usr/bin/bwrap --args 36 -- /usr/bin/xdg-db
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     /run/user/1000/.mutter-Xwaylandauth.QG3VL3
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     --setenv
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     XDG_CACHE_HOME
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     /var/home/james/.var/app/dev.jamesq.Pasar/cache
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     /var/home/james/.var/app/dev.hanthor.Pasar/cache
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     --setenv
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     XDG_CONFIG_DIRS
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     /app/etc/xdg:/etc/xdg
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     --setenv
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     XDG_CONFIG_HOME
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     /var/home/james/.var/app/dev.jamesq.Pasar/config
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     /var/home/james/.var/app/dev.hanthor.Pasar/config
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     --setenv
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     XDG_CURRENT_DESKTOP
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     GNOME
@@ -1039,7 +1039,7 @@ flatpak-INFO: 11:14:43.612: Running '/usr/bin/bwrap --args 36 -- /usr/bin/xdg-db
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     /app/share:/usr/share:/usr/share/runtime/share:/run/host/user-share:/run/host/share
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     --setenv
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     XDG_DATA_HOME
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     /var/home/james/.var/app/dev.jamesq.Pasar/data
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     /var/home/james/.var/app/dev.hanthor.Pasar/data
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     --setenv
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     XDG_MENU_PREFIX
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     gnome-
@@ -1054,7 +1054,7 @@ flatpak-INFO: 11:14:43.612: Running '/usr/bin/bwrap --args 36 -- /usr/bin/xdg-db
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     wayland
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     --setenv
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     XDG_STATE_HOME
-(flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     /var/home/james/.var/app/dev.jamesq.Pasar/.local/state
+(flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     /var/home/james/.var/app/dev.hanthor.Pasar/.local/state
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     --setenv
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     XMODIFIERS
 (flatpak run:59438): flatpak-DEBUG: 11:14:43.628:     @im=ibus
@@ -1301,7 +1301,7 @@ MESA-INTEL: warning: ../src/intel/vulkan/anv_formats.c:959: FINISHME: support YU
 [2m2026-03-03T05:44:44.935373Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:44.934: 	filesystems=home;/home/linuxbrew:ro;
 [2m2026-03-03T05:44:44.935378Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:44.934: 	[Session Bus Policy]
 [2m2026-03-03T05:44:44.935382Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:44.934: 	org.freedesktop.Flatpak=talk
-[2m2026-03-03T05:44:44.935389Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:44.934: 	dev.jamesq.Pasar.SearchProvider=own
+[2m2026-03-03T05:44:44.935389Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:44.934: 	dev.hanthor.Pasar.SearchProvider=own
 [2m2026-03-03T05:44:44.935392Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:44.934: 	[Environment]
 [2m2026-03-03T05:44:44.935396Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:44.934: 	ALSA_CONFIG_PATH=/usr/share/alsa/alsa-flatpak.conf
 [2m2026-03-03T05:44:44.935399Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:44.934: 	GI_TYPELIB_PATH=/app/lib/girepository-1.0
@@ -1355,7 +1355,7 @@ MESA-INTEL: warning: ../src/intel/vulkan/anv_formats.c:959: FINISHME: support YU
 [2m2026-03-03T05:44:44.946566Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:44.945:     --lock-file
 [2m2026-03-03T05:44:44.946575Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:44.945:     /usr/.ref
 [2m2026-03-03T05:44:44.946580Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:44.945:     --ro-bind
-[2m2026-03-03T05:44:44.946586Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:44.945:     /var/home/james/.local/share/flatpak/app/dev.jamesq.Pasar/x86_64/master/08d9bac83988b95e44bdb05071a3a174cc29db1c72f30bb2551f3104313b6497/files
+[2m2026-03-03T05:44:44.946586Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:44.945:     /var/home/james/.local/share/flatpak/app/dev.hanthor.Pasar/x86_64/master/08d9bac83988b95e44bdb05071a3a174cc29db1c72f30bb2551f3104313b6497/files
 [2m2026-03-03T05:44:44.946592Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:44.945:     /app
 [2m2026-03-03T05:44:44.946596Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:44.945:     --lock-file
 [2m2026-03-03T05:44:44.946602Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:44.945:     /app/.ref
@@ -1686,8 +1686,8 @@ MESA-INTEL: warning: ../src/intel/vulkan/anv_formats.c:959: FINISHME: support YU
 [2m2026-03-03T05:44:44.996364Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: flatpak-INFO: 11:14:44.995: FIPS is disabled
 [2m2026-03-03T05:44:44.996394Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: flatpak-INFO: 11:14:44.995: /var/lib/flatpak/runtime/org.gnome.Platform/x86_64/49/c97a19249ae151244a123538628d10aa41ddce6f2af64d8b3c010838a3e9ccaf/files/lib32 does not exist
 [2m2026-03-03T05:44:44.999220Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: flatpak-INFO: 11:14:44.999: Allocated instance id 2069390727
-[2m2026-03-03T05:44:44.999815Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: flatpak-INFO: 11:14:44.999: Add defaults in dir /dev/jamesq/Pasar/
-[2m2026-03-03T05:44:44.999943Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: flatpak-INFO: 11:14:44.999: Add locks in dir /dev/jamesq/Pasar/
+[2m2026-03-03T05:44:44.999815Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: flatpak-INFO: 11:14:44.999: Add defaults in dir /dev/hanthor/Pasar/
+[2m2026-03-03T05:44:44.999943Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: flatpak-INFO: 11:14:44.999: Add locks in dir /dev/hanthor/Pasar/
 [2m2026-03-03T05:44:44.999986Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: flatpak-INFO: 11:14:44.999: Disallowing ipc access
 [2m2026-03-03T05:44:45.000000Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:44.999: Trying to replace with tmpfs: /var/home/james/.local/share/flatpak
 [2m2026-03-03T05:44:45.000092Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:45.000: /var is not a symlink
@@ -1715,7 +1715,7 @@ MESA-INTEL: warning: ../src/intel/vulkan/anv_formats.c:959: FINISHME: support YU
 [2m2026-03-03T05:44:45.043563Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:45.042:     --lock-file
 [2m2026-03-03T05:44:45.043567Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:45.042:     /usr/.ref
 [2m2026-03-03T05:44:45.043570Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:45.042:     --ro-bind
-[2m2026-03-03T05:44:45.043573Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:45.042:     /var/home/james/.local/share/flatpak/app/dev.jamesq.Pasar/x86_64/master/08d9bac83988b95e44bdb05071a3a174cc29db1c72f30bb2551f3104313b6497/files
+[2m2026-03-03T05:44:45.043573Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:45.042:     /var/home/james/.local/share/flatpak/app/dev.hanthor.Pasar/x86_64/master/08d9bac83988b95e44bdb05071a3a174cc29db1c72f30bb2551f3104313b6497/files
 [2m2026-03-03T05:44:45.043577Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:45.042:     /app
 [2m2026-03-03T05:44:45.043580Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:45.042:     --lock-file
 [2m2026-03-03T05:44:45.043589Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:45.042:     /app/.ref
@@ -2281,10 +2281,10 @@ MESA-INTEL: warning: ../src/intel/vulkan/anv_formats.c:959: FINISHME: support YU
 [2m2026-03-03T05:44:45.046209Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:45.046:     1
 [2m2026-03-03T05:44:45.046214Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:45.046:     --setenv
 [2m2026-03-03T05:44:45.046224Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:45.046:     FLATPAK_ID
-[2m2026-03-03T05:44:45.046229Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:45.046:     dev.jamesq.Pasar
+[2m2026-03-03T05:44:45.046229Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:45.046:     dev.hanthor.Pasar
 [2m2026-03-03T05:44:45.046233Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:45.046:     --setenv
 [2m2026-03-03T05:44:45.046241Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:45.046:     FLATPAK_SANDBOX_DIR
-[2m2026-03-03T05:44:45.046246Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:45.046:     /var/home/james/.var/app/dev.jamesq.Pasar/sandbox
+[2m2026-03-03T05:44:45.046246Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:45.046:     /var/home/james/.var/app/dev.hanthor.Pasar/sandbox
 [2m2026-03-03T05:44:45.046251Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:45.046:     --setenv
 [2m2026-03-03T05:44:45.046256Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:45.046:     GDMSESSION
 [2m2026-03-03T05:44:45.046762Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59555): flatpak-DEBUG: 11:14:45.046:     gnome
@@ -2725,7 +2725,7 @@ MESA-INTEL: warning: ../src/intel/vulkan/anv_formats.c:959: FINISHME: support YU
 [2m2026-03-03T05:44:46.095730Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.095: 	filesystems=home;/home/linuxbrew:ro;
 [2m2026-03-03T05:44:46.095733Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.095: 	[Session Bus Policy]
 [2m2026-03-03T05:44:46.095736Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.095: 	org.freedesktop.Flatpak=talk
-[2m2026-03-03T05:44:46.095740Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.095: 	dev.jamesq.Pasar.SearchProvider=own
+[2m2026-03-03T05:44:46.095740Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.095: 	dev.hanthor.Pasar.SearchProvider=own
 [2m2026-03-03T05:44:46.095743Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.095: 	[Environment]
 [2m2026-03-03T05:44:46.095747Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.095: 	ALSA_CONFIG_PATH=/usr/share/alsa/alsa-flatpak.conf
 [2m2026-03-03T05:44:46.095750Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.095: 	GI_TYPELIB_PATH=/app/lib/girepository-1.0
@@ -2779,7 +2779,7 @@ MESA-INTEL: warning: ../src/intel/vulkan/anv_formats.c:959: FINISHME: support YU
 [2m2026-03-03T05:44:46.099056Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.099:     --lock-file
 [2m2026-03-03T05:44:46.099059Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.099:     /usr/.ref
 [2m2026-03-03T05:44:46.099063Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.099:     --ro-bind
-[2m2026-03-03T05:44:46.099073Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.099:     /var/home/james/.local/share/flatpak/app/dev.jamesq.Pasar/x86_64/master/08d9bac83988b95e44bdb05071a3a174cc29db1c72f30bb2551f3104313b6497/files
+[2m2026-03-03T05:44:46.099073Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.099:     /var/home/james/.local/share/flatpak/app/dev.hanthor.Pasar/x86_64/master/08d9bac83988b95e44bdb05071a3a174cc29db1c72f30bb2551f3104313b6497/files
 [2m2026-03-03T05:44:46.099078Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.099:     /app
 [2m2026-03-03T05:44:46.099082Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.099:     --lock-file
 [2m2026-03-03T05:44:46.099130Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.099:     /app/.ref
@@ -3110,8 +3110,8 @@ MESA-INTEL: warning: ../src/intel/vulkan/anv_formats.c:959: FINISHME: support YU
 [2m2026-03-03T05:44:46.130945Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: flatpak-INFO: 11:14:46.130: FIPS is disabled
 [2m2026-03-03T05:44:46.130972Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: flatpak-INFO: 11:14:46.130: /var/lib/flatpak/runtime/org.gnome.Platform/x86_64/49/c97a19249ae151244a123538628d10aa41ddce6f2af64d8b3c010838a3e9ccaf/files/lib32 does not exist
 [2m2026-03-03T05:44:46.133953Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: flatpak-INFO: 11:14:46.133: Allocated instance id 1199755085
-[2m2026-03-03T05:44:46.133977Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: flatpak-INFO: 11:14:46.133: Add defaults in dir /dev/jamesq/Pasar/
-[2m2026-03-03T05:44:46.133982Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: flatpak-INFO: 11:14:46.133: Add locks in dir /dev/jamesq/Pasar/
+[2m2026-03-03T05:44:46.133977Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: flatpak-INFO: 11:14:46.133: Add defaults in dir /dev/hanthor/Pasar/
+[2m2026-03-03T05:44:46.133982Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: flatpak-INFO: 11:14:46.133: Add locks in dir /dev/hanthor/Pasar/
 [2m2026-03-03T05:44:46.134217Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: flatpak-INFO: 11:14:46.134: Disallowing ipc access
 [2m2026-03-03T05:44:46.134244Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.134: Trying to replace with tmpfs: /var/home/james/.local/share/flatpak
 [2m2026-03-03T05:44:46.134252Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.134: /var is not a symlink
@@ -3139,7 +3139,7 @@ MESA-INTEL: warning: ../src/intel/vulkan/anv_formats.c:959: FINISHME: support YU
 [2m2026-03-03T05:44:46.178736Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.178:     --lock-file
 [2m2026-03-03T05:44:46.178738Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.178:     /usr/.ref
 [2m2026-03-03T05:44:46.178742Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.178:     --ro-bind
-[2m2026-03-03T05:44:46.178753Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.178:     /var/home/james/.local/share/flatpak/app/dev.jamesq.Pasar/x86_64/master/08d9bac83988b95e44bdb05071a3a174cc29db1c72f30bb2551f3104313b6497/files
+[2m2026-03-03T05:44:46.178753Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.178:     /var/home/james/.local/share/flatpak/app/dev.hanthor.Pasar/x86_64/master/08d9bac83988b95e44bdb05071a3a174cc29db1c72f30bb2551f3104313b6497/files
 [2m2026-03-03T05:44:46.178758Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.178:     /app
 [2m2026-03-03T05:44:46.178761Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.178:     --lock-file
 [2m2026-03-03T05:44:46.178769Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.178:     /app/.ref
@@ -3705,10 +3705,10 @@ MESA-INTEL: warning: ../src/intel/vulkan/anv_formats.c:959: FINISHME: support YU
 [2m2026-03-03T05:44:46.183488Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.182:     1
 [2m2026-03-03T05:44:46.183490Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.182:     --setenv
 [2m2026-03-03T05:44:46.183497Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.182:     FLATPAK_ID
-[2m2026-03-03T05:44:46.183501Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.182:     dev.jamesq.Pasar
+[2m2026-03-03T05:44:46.183501Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.182:     dev.hanthor.Pasar
 [2m2026-03-03T05:44:46.183504Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.182:     --setenv
 [2m2026-03-03T05:44:46.183507Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.182:     FLATPAK_SANDBOX_DIR
-[2m2026-03-03T05:44:46.183509Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.182:     /var/home/james/.var/app/dev.jamesq.Pasar/sandbox
+[2m2026-03-03T05:44:46.183509Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.182:     /var/home/james/.var/app/dev.hanthor.Pasar/sandbox
 [2m2026-03-03T05:44:46.183512Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.182:     --setenv
 [2m2026-03-03T05:44:46.183514Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.182:     GDMSESSION
 [2m2026-03-03T05:44:46.183518Z[0m [34mDEBUG[0m [2mglycin::dbus[0m[2m:[0m Loader stdout: (/usr/bin/flatpak run:59751): flatpak-DEBUG: 11:14:46.182:     gnome

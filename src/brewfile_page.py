@@ -19,7 +19,7 @@ from .logging_util import get_logger, log_timing
 _log = get_logger('brewfile_page')
 
 
-@Gtk.Template(resource_path='/dev/jamesq/Pasar/brewfile-page.ui')
+@Gtk.Template(resource_path='/dev/hanthor/Pasar/brewfile-page.ui')
 class PasarBrewfilePage(Adw.Bin):
     __gtype_name__ = 'PasarBrewfilePage'
 

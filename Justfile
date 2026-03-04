@@ -1,4 +1,4 @@
-APP_ID := "dev.jamesq.Pasar"
+APP_ID := "dev.hanthor.Pasar"
 MANIFEST := APP_ID + ".json"
 BUILD_DIR := ".flatpak-build"
 REPO_DIR := ".flatpak-repo"

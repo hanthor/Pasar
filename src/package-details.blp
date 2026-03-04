@@ -1,5 +1,6 @@
 using Gtk 4.0;
 using Adw 1;
+using WebKit 6.0;
 
 template $PasarPackageDetails: Adw.NavigationPage {
   title: "Package Details";
@@ -294,39 +295,44 @@ template $PasarPackageDetails: Adw.NavigationPage {
                   orientation: vertical;
                   styles ["readme-container"]
 
-                  ScrolledWindow readme_scrolled {
-                    hscrollbar-policy: never;
-                    vscrollbar-policy: external;
-                    propagate-natural-height: true;
-                    max-content-height: 300;
-                    styles ["readme-truncated"]
+                  Stack readme_stack {
+                    hexpand: true;
+                    vexpand: true;
+                    transition-type: crossfade;
 
-                    TextView readme_view {
-                      editable: false;
-                      cursor-visible: false;
-                      wrap-mode: word_char;
-                      left-margin: 12;
-                      right-margin: 12;
-                      top-margin: 12;
-                      bottom-margin: 12;
-                      pixels-above-lines: 4;
-                      pixels-below-lines: 4;
-                      styles ["readme"]
+                    StackPage {
+                      name: "button";
+                      child: 
+                        Box {
+                          orientation: vertical;
+                          halign: center;
+                          valign: center;
+                          margin-top: 24;
+                          margin-bottom: 24;
+                          spacing: 12;
+
+                          Image {
+                            icon-name: "text-x-generic-symbolic";
+                            pixel-size: 48;
+                            styles ["dim-label"]
+                          }
+
+                          Button show_readme_button {
+                            label: _("Show README");
+                            styles ["suggested-action", "pill"]
+                            clicked => $on_show_readme_clicked();
+                          }
+                        };
                     }
-                  }
 
-                  Button read_more_button {
-                    label: "Read More";
-                    halign: center;
-                    styles ["flat", "read-more-button", "pill"]
-                  }
-
-                  Box {
-                    halign: end;
-                    Button debug_render_button {
-                      icon-name: "tools-check-spelling-symbolic";
-                      tooltip-text: "Debug Rendered Output";
-                      styles ["flat", "circular", "debug-button"]
+                    StackPage {
+                      name: "webview";
+                      child: 
+                        WebKit.WebView readme_webview {
+                          hexpand: true;
+                          vexpand: true;
+                          styles ["readme-webview"]
+                        };
                     }
                   }
                 }
